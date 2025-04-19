@@ -58,8 +58,18 @@ export class TerminalAgent {
       .argument('[command]', '直接执行命令')
       .action(async (command, options) => {
         if (command) {
-          // 直接执行命令模式
-          await this.executeOneCommand(command, { verbose: options.verbose });
+          // 检查命令是否是特殊命令
+          if (command.startsWith('/')) {
+            // 处理特殊命令
+            await this.specialCommandHandler.handle(
+              command,
+              this.state.currentDir,
+              this.state.messages
+            );
+          } else {
+            // 直接执行普通命令（作为AI输入）
+            await this.executeOneCommand(command, { verbose: options.verbose });
+          }
         } else if (options.interactive || !command) {
           // 交互式界面模式
           await this.startInteractiveSession({ verbose: options.verbose });
