@@ -37,7 +37,8 @@ export class ShellTagProcessor {
     options: { 
       executeCommands?: boolean; 
       interactive?: boolean;
-    } = { executeCommands: true, interactive: true }
+      interactiveCommand?: boolean; // 是否以交互式模式执行命令
+    } = { executeCommands: true, interactive: true, interactiveCommand: false }
   ): Promise<CommandExecutionResult[]> {
     // 查找<shell></shell>标签内的内容
     const shellTagRegex = /<shell>([\s\S]*?)<\/shell>/g;
@@ -89,15 +90,34 @@ export class ShellTagProcessor {
       if (shouldExecute) {
         // 执行所有命令
         for (const cmd of commands) {
-          // 使用非交互式执行收集输出
-          const result = await this.shellExecutor.execute(cmd, currentDir);
+          let result: ShellExecutionResult;
+          let output: string;
           
-          // 收集命令执行结果
-          const output = result.stdout + (result.stderr ? `\n${result.stderr}` : '');
-          
-          // 展示命令和输出
-          console.log(ConsoleUtils.formatCommand(cmd));
-          console.log(output);
+          // 根据是否交互式执行命令
+          if (options.interactiveCommand) {
+            // 使用交互式模式执行命令
+            console.log(ConsoleUtils.formatCommand(cmd));
+            const exitCode = await this.shellExecutor.executeInteractive(cmd, currentDir);
+            
+            // 交互式命令没有标准输出收集，使用特殊提示
+            output = `[交互式命令已执行完成，退出码: ${exitCode}]`;
+            
+            result = {
+              exitCode: exitCode,
+              stdout: output,
+              stderr: ''
+            };
+          } else {
+            // 使用非交互式执行收集输出
+            result = await this.shellExecutor.execute(cmd, currentDir);
+            
+            // 收集命令执行结果
+            output = result.stdout + (result.stderr ? `\n${result.stderr}` : '');
+            
+            // 展示命令和输出
+            console.log(ConsoleUtils.formatCommand(cmd));
+            console.log(output);
+          }
           
           // 添加到结果数组
           results.push({

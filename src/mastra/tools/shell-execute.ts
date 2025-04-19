@@ -29,6 +29,7 @@ export const shellExecuteTool = createTool({
       const cmd = args.shift() || '';
       
       // 设置选项
+      // 根据是否交互式选择不同的stdio模式
       const options: {
         cwd?: string;
         shell?: boolean;
@@ -36,9 +37,16 @@ export const shellExecuteTool = createTool({
         detached?: boolean;
       } = {
         shell: true, // 使用shell执行命令
-        stdio: 'inherit', // 直接继承父进程的标准输入输出
         detached: false // 不分离进程，以便于控制
       };
+      
+      // 如果是交互式模式，使用inherit模式来允许直接交互
+      if (context.interactive) {
+        options.stdio = 'inherit';
+      } else {
+        // 非交互式模式使用pipe捕获输出
+        options.stdio = 'pipe';
+      }
       
       if (context.cwd) {
         options.cwd = context.cwd;
@@ -73,20 +81,48 @@ export const shellExecuteTool = createTool({
       // 添加SIGINT处理器
       process.on('SIGINT', sigintHandler);
       
-      // 如果不使用inherit模式，才需要手动收集输出
-      if (options.stdio !== 'inherit') {
+      // 如果不是交互式模式，才收集输出
+      if (!context.interactive) {
         // 收集标准输出
         childProcess.stdout?.on('data', (data) => {
           const output = data.toString();
           stdoutData += output;
-          process.stdout.write(output);
+          process.stdout.write(output); // 同时显示在终端上
         });
         
         // 收集标准错误
         childProcess.stderr?.on('data', (data) => {
           const output = data.toString();
           stderrData += output;
-          process.stderr.write(output);
+          process.stderr.write(output); // 同时显示在终端上
+        });
+      }
+      
+      // 如果是交互式模式，我们需要将标准输入传递给子进程
+      if (context.interactive && process.stdin.isTTY) {
+        // 设置原始模式，以便捕获每个按键
+        process.stdin.setRawMode?.(true);
+        process.stdin.resume();
+        
+        // 将用户输入传递给子进程
+        const stdinHandler = (data: Buffer) => {
+          // 如果按下 Ctrl+C，则发送 SIGINT 信号
+          if (data.length === 1 && data[0] === 0x03) {
+            process.emit('SIGINT', 'SIGINT');
+            return;
+          }
+          
+          // 将输入传递给子进程
+          childProcess.stdin?.write(data);
+        };
+        
+        process.stdin.on('data', stdinHandler);
+        
+        // 在命令结束时清理
+        childProcess.on('close', () => {
+          process.stdin.setRawMode?.(false);
+          process.stdin.pause();
+          process.stdin.removeListener('data', stdinHandler);
         });
       }
       
@@ -96,11 +132,21 @@ export const shellExecuteTool = createTool({
         // 清理事件监听器
         process.removeListener('SIGINT', sigintHandler);
         
-        resolve({
-          stdout: stdoutData,
-          stderr: stderrData,
-          exitCode: code,
-        });
+        // 如果是交互式模式，我们无法捕获输出，所以返回一个特殊的提示
+        if (context.interactive) {
+          resolve({
+            stdout: '交互式命令执行完成',
+            stderr: '',
+            exitCode: code,
+          });
+        } else {
+          // 非交互式模式返回捕获的输出
+          resolve({
+            stdout: stdoutData,
+            stderr: stderrData,
+            exitCode: code,
+          });
+        }
       });
       
       // 处理错误

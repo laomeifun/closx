@@ -3,6 +3,7 @@ import { shellExecuteTool } from "../tools";
 import { directoryInfoTool } from "../tools";
 import { shellPrompt } from "./prompt";
 import { getCurrentEnvironmentTool } from "../tools/get-current-environment";
+import { getCurrentDirectoryTool } from "../tools/get-current-directory";
 import { shellMemory } from "./shellmemory";
 import config, { getBestAvailableModel, getModel, loadFromAllConfigLocations } from "../../config";
 
@@ -60,7 +61,7 @@ createShellAgent().then(agent => {
 //   name: "Shell",
 //   instructions: shellPrompt,
 //   model:myApi("grok-3-beta"),
-//   tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool },
+//   tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, getCurrentDirectoryTool },
 //   memory: shellMemory,
 // });
 
@@ -68,7 +69,6 @@ createShellAgent().then(agent => {
 //   name: "Shell",
 //   instructions: shellPrompt,
 //   model:myApi("grok-3-beta"),
-//   tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool },
+//   tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, getCurrentDirectoryTool },
 //   memory: shellMemory,
 // });
-

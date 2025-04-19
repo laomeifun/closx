@@ -231,7 +231,8 @@ export class TerminalAgent {
       // 处理<shell>标签并获取命令执行结果
       const commandResults = await this.shellTagProcessor.processShellTags(tempResponse, this.state.currentDir, { 
         executeCommands: true,
-        interactive: true // 启用交互式确认
+        interactive: true, // 启用交互式确认
+        interactiveCommand: true // 启用交互式命令执行
       });
       
       // 如果有命令执行结果，将其发送给 agent
@@ -240,9 +241,13 @@ export class TerminalAgent {
         let commandResultsMessage = '';
         
         for (const result of commandResults) {
-          // 使用指定的提示词变量格式
-          commandResultsMessage += `执行的命令<shell>${result.command}</shell>,这是结果:\n${result.output}\n\n`;
-        }
+// 记录命令执行过程和结果
+const executionProcess = options.verbose ? 
+  `执行过程:\n命令在目录 ${this.state.currentDir} 中执行\n退出码: ${result.exitCode}\n` : 
+  '';
+
+// 使用指定的提示词变量格式，注入执行过程和结果
+commandResultsMessage += `执行的命令<shell>${result.command}</shell>\n${executionProcess}这是结果:\n${result.output}\n\n`;        }
         
         // 将命令结果添加到消息历史中
         this.state.messages.push({

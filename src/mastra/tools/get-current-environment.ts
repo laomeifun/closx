@@ -42,8 +42,15 @@ export interface EnvironmentInfo {
     /** 空闲内存（字节） */
     free: number;
   };
-  /** CPU信息 */
-  cpus: Array<{
+  /** CPU信息摘要 */
+  cpuSummary?: {
+    /** CPU型号 */
+    model: string;
+    /** CPU核心数 */
+    cores: number;
+  };
+  /** CPU详细信息（可选） */
+  cpus?: Array<{
     /** CPU型号 */
     model: string;
     /** CPU速度（MHz） */
@@ -60,6 +67,7 @@ export const getCurrentEnvironmentTool = createTool({
   description: '获取当前系统环境的详细信息',
   inputSchema: z.object({
     includePathDetails: z.boolean().optional().describe('是否包含PATH环境变量的详细分析，默认为false'),
+    includeCpuDetails: z.boolean().optional().describe('是否包含详细CPU信息，默认为false'),
   }),
   outputSchema: z.object({
     cwd: z.string().describe('当前工作目录'),
@@ -80,16 +88,23 @@ export const getCurrentEnvironmentTool = createTool({
       total: z.number().describe('总内存（字节）'),
       free: z.number().describe('空闲内存（字节）'),
     }).describe('内存信息'),
+    cpuSummary: z.object({
+      model: z.string().describe('CPU型号'),
+      cores: z.number().describe('CPU核心数'),
+    }).optional().describe('CPU信息摘要'),
     cpus: z.array(z.object({
       model: z.string().describe('CPU型号'),
       speed: z.number().describe('CPU速度（MHz）'),
-    })).describe('CPU信息'),
+    })).optional().describe('CPU详细信息'),
   }),
   execute: async ({ context }) => {
     const includePathDetails = context.includePathDetails || false;
+    const includeCpuDetails = context.includeCpuDetails || false;
     const userInfo = os.userInfo();
     const pathEnv = process.env.PATH || process.env.Path;
+    const cpuInfo = os.cpus();
     
+    // 准备基本结果对象
     const result: EnvironmentInfo = {
       cwd: process.cwd(),
       user: userInfo.username,
@@ -108,10 +123,11 @@ export const getCurrentEnvironmentTool = createTool({
         total: os.totalmem(),
         free: os.freemem(),
       },
-      cpus: os.cpus().map(cpu => ({
-        model: cpu.model,
-        speed: cpu.speed,
-      })),
+      // 添加CPU摘要信息
+      cpuSummary: cpuInfo.length > 0 ? {
+        model: cpuInfo[0].model.trim(),
+        cores: cpuInfo.length,
+      } : undefined,
     };
     
     // 如果需要包含PATH详情，则添加拆分后的路径条目
@@ -120,15 +136,23 @@ export const getCurrentEnvironmentTool = createTool({
       result.pathEntries = pathEnv.split(pathSeparator);
     }
     
+    // 只有在明确请求时才包含详细CPU信息
+    if (includeCpuDetails) {
+      result.cpus = cpuInfo.map(cpu => ({
+        model: cpu.model,
+        speed: cpu.speed,
+      }));
+    }
+    
     return result;
   },
 });
 
-/**
- * 获取当前环境信息
- * 
- * 这是一个便捷函数，直接调用getCurrentEnvironmentTool工具
- * 
- * @returns {Promise<EnvironmentInfo>} 包含环境信息的对象
- */
-export const getCurrentEnvironment = getCurrentEnvironmentTool;
+// /**
+//  * 获取当前环境信息
+//  * 
+//  * 这是一个便捷函数，直接调用getCurrentEnvironmentTool工具
+//  * 
+//  * @returns {Promise<EnvironmentInfo>} 包含环境信息的对象
+//  */
+// export const getCurrentEnvironment = getCurrentEnvironmentTool;

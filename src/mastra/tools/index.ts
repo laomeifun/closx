@@ -1,7 +1,9 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { shellExecuteTool } from './shell-execute';
+import { interactiveShellExecuteTool } from './interactive-shell-execute';
 import { directoryInfoTool } from './directory-info';
+import { getCurrentDirectoryTool } from './get-current-directory';
 
 interface GeocodingResponse {
   results: {
@@ -105,4 +107,5 @@ function getWeatherCondition(code: number): string {
 
 export * from './shell-execute';
 export * from './get-current-environment';
-export { weatherTool, directoryInfoTool };
+export * from './get-current-directory';
+export { weatherTool, directoryInfoTool, getCurrentDirectoryTool, interactiveShellExecuteTool };
