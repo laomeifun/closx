@@ -34,7 +34,7 @@ export class TerminalAgent {
     this.specialCommandHandler = new SpecialCommandHandler();
     this.shellTagProcessor = new ShellTagProcessor();
     this.agentService = new AgentService();
-    
+
     this.state = {
       messages: [],
       currentDir: process.cwd(),
@@ -84,11 +84,11 @@ export class TerminalAgent {
     console.log(chalk.gray(`📂 工作目录: ${this.state.currentDir}`));
     console.log(chalk.yellow('\n💡 提示: 输入 /help 查看可用命令\n'));
 
-    // 添加系统消息
-    const systemPrompt = await this.promptGenerator.generateShellPromptWithEnv();
+    // 添加简单的系统消息（不包含环境信息，因为agent层已经包含）
     this.state.messages.push({
       role: 'system',
-      content: systemPrompt
+      content: `当前会话ID: ${this.state.threadId}
+当前时间: ${new Date().toISOString()}`
     });
 
     await this.chatLoop(options);
@@ -113,8 +113,8 @@ export class TerminalAgent {
       // 处理特殊命令
       if (userInput.startsWith('/')) {
         const handled = await this.specialCommandHandler.handle(
-          userInput, 
-          this.state.currentDir, 
+          userInput,
+          this.state.currentDir,
           this.state.messages
         );
         if (handled) continue;
@@ -142,9 +142,9 @@ export class TerminalAgent {
       // 获取代理响应
       const response = await this.agentService.streamResponse(
         this.state.messages,
-        { 
-          resourceId: this.state.resourceId, 
-          threadId: this.state.threadId 
+        {
+          resourceId: this.state.resourceId,
+          threadId: this.state.threadId
         }
       );
 
@@ -179,11 +179,11 @@ export class TerminalAgent {
    * @param options - 终端代理选项
    */
   private async executeOneCommand(command: string, options: TerminalAgentOptions = {}): Promise<void> {
-    // 添加系统消息
-    const systemPrompt = await this.promptGenerator.generateShellPromptWithEnv();
+    // 添加简单的系统消息（不包含环境信息，因为agent层已经包含）
     this.state.messages.push({
       role: 'system',
-      content: systemPrompt
+      content: `当前会话ID: ${this.state.threadId}
+当前时间: ${new Date().toISOString()}`
     });
 
     // 添加用户消息

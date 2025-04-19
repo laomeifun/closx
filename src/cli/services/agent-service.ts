@@ -34,6 +34,23 @@ export class AgentService {
     messages: ChatMessage[], 
     options: AgentRequestOptions
   ): Promise<AgentResponse> {
+    // 只发送最新的用户消息，利用memory系统已有的历史记录
+    const lastUserMessageIndex = [...messages].reverse().findIndex(msg => msg.role === 'user');
+    
+    if (lastUserMessageIndex !== -1) {
+      const lastMessages = [
+        // 包含最新的系统消息（如果有）
+        ...messages.filter((msg, index) => 
+          msg.role === 'system' && index > messages.length - lastUserMessageIndex - 2
+        ),
+        // 最新的用户消息
+        messages[messages.length - lastUserMessageIndex - 1]
+      ];
+      
+      return shell.stream(lastMessages, options);
+    }
+    
+    // 如果没找到用户消息，发送所有消息（防止错误）
     return shell.stream(messages, options);
   }
   
