@@ -1,20 +1,20 @@
 /**
- * 会话管理服务
- * 负责管理会话状态和消息历史
+ * Session Management Service
+ * Responsible for managing session state and message history
  */
 import { ChatMessage, SessionState } from '../types/terminal-types';
 import { AgentService } from './agent-service';
 
 /**
- * 会话服务类
- * 负责管理会话状态和消息历史
+ * Session Service Class
+ * Responsible for managing session state and message history
  */
 export class SessionService {
   private readonly agentService: AgentService;
   private state: SessionState;
 
   /**
-   * 构造函数
+   * Constructor
    */
   constructor() {
     this.agentService = new AgentService();
@@ -27,34 +27,34 @@ export class SessionService {
   }
 
   /**
-   * 获取当前会话状态
-   * @returns 会话状态
+   * Get current session state
+   * @returns Session state
    */
   public getState(): SessionState {
     return this.state;
   }
 
   /**
-   * 添加系统消息
+   * Add system message
    */
   public addSystemMessage(): void {
-    // 创建新的消息数组并添加消息
+    // Create new message array and add message
     this.state = {
       ...this.state,
       messages: [...this.state.messages, {
         role: 'system',
-        content: `当前会话ID: ${this.state.threadId}
-当前时间: ${new Date().toISOString()}`
+        content: `Current Session ID: ${this.state.threadId}
+Current Time: ${new Date().toISOString()}`
       }]
     };
   }
 
   /**
-   * 添加用户消息
-   * @param content - 消息内容
+   * Add user message
+   * @param content - Message content
    */
   public addUserMessage(content: string): void {
-    // 创建新的消息数组并添加消息
+    // Create new message array and add message
     this.state = {
       ...this.state,
       messages: [...this.state.messages, {
@@ -65,11 +65,11 @@ export class SessionService {
   }
 
   /**
-   * 添加助手消息
-   * @param content - 消息内容
+   * Add assistant message
+   * @param content - Message content
    */
   public addAssistantMessage(content: string): void {
-    // 创建新的消息数组并添加消息
+    // Create new message array and add message
     this.state = {
       ...this.state,
       messages: [...this.state.messages, {
@@ -80,19 +80,19 @@ export class SessionService {
   }
 
   /**
-   * 获取消息历史
-   * @returns 消息历史数组
+   * Get message history
+   * @returns Message history array
    */
   public getMessages(): readonly ChatMessage[] {
     return this.state.messages;
   }
 
   /**
-   * 设置当前工作目录
-   * @param dir - 工作目录路径
+   * Set current working directory
+   * @param dir - Working directory path
    */
   public setCurrentDir(dir: string): void {
-    // 创建新的状态对象
+    // Create new state object
     this.state = {
       ...this.state,
       currentDir: dir
@@ -100,24 +100,24 @@ export class SessionService {
   }
 
   /**
-   * 获取当前工作目录
-   * @returns 当前工作目录
+   * Get current working directory
+   * @returns Current working directory
    */
   public getCurrentDir(): string {
     return this.state.currentDir;
   }
 
   /**
-   * 获取资源ID
-   * @returns 资源ID
+   * Get resource ID
+   * @returns Resource ID
    */
   public getResourceId(): string {
     return this.state.resourceId;
   }
 
   /**
-   * 获取线程ID
-   * @returns 线程ID
+   * Get thread ID
+   * @returns Thread ID
    */
   public getThreadId(): string {
     return this.state.threadId;

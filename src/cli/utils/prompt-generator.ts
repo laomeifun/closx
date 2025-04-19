@@ -1,13 +1,13 @@
 /**
- * 提示词生成工具
- * 用于生成包含系统环境信息的提示词
+ * Prompt Generator Tool
+ * Used to generate prompts containing system environment information
  */
 import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
 /**
- * 系统环境信息结构
+ * System Environment Information Structure
  */
 export type SystemEnvironmentInfo = {
   readonly shell: string;
@@ -24,31 +24,31 @@ export type SystemEnvironmentInfo = {
 };
 
 /**
- * 提示词生成器类
+ * Prompt Generator Class
  */
 export class PromptGenerator {
   private readonly execPromise = promisify(exec);
   
   /**
-   * 获取系统环境信息
+   * Get system environment information
    */
   public async getSystemEnvironmentInfo(): Promise<SystemEnvironmentInfo> {
-    // 获取Shell信息
+    // Get Shell information
     let shell = process.env.SHELL || '';
     try {
       const { stdout } = await this.execPromise('echo $SHELL');
       shell = stdout.trim();
     } catch (error) {
-      // 忽略错误
+      // Ignore error
     }
     
-    // 获取Node.js版本
+    // Get Node.js version
     let nodeVersion = process.version;
     try {
       const { stdout } = await this.execPromise('node -v');
       nodeVersion = stdout.trim();
     } catch (error) {
-      // 忽略错误
+      // Ignore error
     }
     
     return {
@@ -67,24 +67,24 @@ export class PromptGenerator {
   }
   
   /**
-   * 生成带有环境信息的系统提示词
+   * Generate system prompt with environment information
    */
   public async generateShellPromptWithEnv(): Promise<string> {
     const envInfo = await this.getSystemEnvironmentInfo();
     
-    return `你是一个交互式终端代理，可以帮助用户执行命令和解答问题。
-环境信息:
+    return `You are an interactive terminal agent that can help users execute commands and answer questions.
+Environment information:
 - Shell: ${envInfo.shell}
-- 操作系统: ${envInfo.platform} ${envInfo.osVersion}
-- 架构: ${envInfo.architecture}
-- 初始目录: ${envInfo.initialDir}
-- 当前目录: ${envInfo.currentDir}
-- 用户: ${envInfo.username}@${envInfo.hostname}
+- Operating System: ${envInfo.platform} ${envInfo.osVersion}
+- Architecture: ${envInfo.architecture}
+- Initial Directory: ${envInfo.initialDir}
+- Current Directory: ${envInfo.currentDir}
+- User: ${envInfo.username}@${envInfo.hostname}
 - PATH: ${envInfo.path}
-- 语言环境: ${envInfo.locale}
-- Node.js 版本: ${envInfo.nodeVersion}
+- Locale: ${envInfo.locale}
+- Node.js Version: ${envInfo.nodeVersion}
 
-当前时间: ${new Date().toISOString()}
-你可以执行命令并与用户进行对话。`;
+Current Time: ${new Date().toISOString()}
+You can execute commands and have conversations with users.`;
   }
 }

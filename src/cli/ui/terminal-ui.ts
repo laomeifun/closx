@@ -1,43 +1,43 @@
 /**
- * 终端界面组件
- * 负责终端UI交互和显示
+ * Terminal Interface Component
+ * Responsible for terminal UI interaction and display
  */
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { ConsoleUtils } from '../utils/console-utils';
 
 /**
- * 终端界面组件类
- * 负责处理终端UI交互和显示
+ * Terminal Interface Component Class
+ * Responsible for handling terminal UI interaction and display
  */
 export class TerminalUI {
   /**
-   * 显示欢迎信息
-   * @param workingDir - 当前工作目录
+   * Display welcome message
+   * @param workingDir - Current working directory
    */
   public showWelcomeMessage(workingDir: string): void {
-    console.log(chalk.blue('💻 === 交互式终端代理 ==='));
-    console.log(chalk.gray(`📂 工作目录: ${workingDir}`));
-    console.log(chalk.yellow('\n💡 提示: 输入 /help 查看可用命令\n'));
+    console.log(chalk.blue('💻 === Interactive Terminal Agent ==='));
+    console.log(chalk.gray(`📂 Working Directory: ${workingDir}`));
+    console.log(chalk.yellow('\n💡 Tip: Type /help to see available commands\n'));
   }
 
   /**
-   * 获取用户输入
-   * @returns 用户输入的内容
+   * Get user input
+   * @returns User input content
    */
   public async getUserInput(): Promise<string> {
     const { userInput } = await inquirer.prompt({
       type: 'input',
       name: 'userInput',
-      message: chalk.green('👤 用户 >')
+      message: chalk.green('👤 User >')
     });
     
     return userInput ? userInput.trim() : '';
   }
 
   /**
-   * 显示AI响应
-   * @param text - 响应文本
+   * Display AI response
+   * @param text - Response text
    */
   public displayAIResponse(text: string): void {
     ConsoleUtils.showResponseHeader();
@@ -46,43 +46,43 @@ export class TerminalUI {
   }
 
   /**
-   * 显示错误信息
-   * @param message - 错误消息
-   * @param error - 错误对象
+   * Display error message
+   * @param message - Error message
+   * @param error - Error object
    */
   public showError(message: string, error: Error): void {
     ConsoleUtils.showError(message, error);
   }
 
   /**
-   * 显示思考中动画
-   * @returns 动画控制器
+   * Display thinking animation
+   * @returns Animation controller
    */
   public showThinkingAnimation() {
     return ConsoleUtils.showThinkingSpinner();
   }
 
   /**
-   * 显示程序退出消息
-   * @param message - 退出消息
+   * Display program exit message
+   * @param message - Exit message
    */
-  public showExitMessage(message = '程序已终止'): void {
+  public showExitMessage(message = 'Program terminated'): void {
     console.log(`\n${message}`);
   }
 
   /**
-   * 显示命令行帮助信息
+   * Display command line help information
    */
   public showCommandLineHelp(): void {
-    console.log(chalk.cyan('\n===== 命令行帮助 ====='));
-    console.log(chalk.yellow('用法: closx [options] [command]'));
-    console.log('\n选项:');
-    console.log('  -v, --verbose     显示详细输出');
-    console.log('  -i, --interactive 进入交互式界面');
-    console.log('  -h, --help        显示帮助信息');
-    console.log('\n示例:');
-    console.log('  closx                    - 进入交互式界面');
-    console.log('  closx "帮我查看当前目录文件"  - 执行单个命令');
+    console.log(chalk.cyan('\n===== Command Line Help ====='));
+    console.log(chalk.yellow('Usage: closx [options] [command]'));
+    console.log('\nOptions:');
+    console.log('  -v, --verbose     Show detailed output');
+    console.log('  -i, --interactive Enter interactive mode');
+    console.log('  -h, --help        Show help information');
+    console.log('\nExamples:');
+    console.log('  closx                      - Enter interactive mode');
+    console.log('  closx "Show files in current directory"  - Execute a single command');
     console.log(chalk.cyan('=====================\n'));
   }
 }

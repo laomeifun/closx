@@ -1,6 +1,6 @@
 /**
- * 命令处理服务
- * 负责处理用户命令和代理响应
+ * Command Processing Service
+ * Responsible for handling user commands and agent responses
  */
 import { TerminalAgentOptions } from '../types/terminal-types';
 import { AgentService } from './agent-service';
@@ -10,8 +10,8 @@ import { SpecialCommandHandler } from '../handlers/special-commands';
 import { TerminalUI } from '../ui/terminal-ui';
 
 /**
- * 命令处理服务类
- * 负责处理用户命令和代理响应流程
+ * Command Processing Service Class
+ * Responsible for handling user commands and agent response processing flow
  */
 export class CommandProcessorService {
   private readonly agentService: AgentService;
@@ -21,9 +21,9 @@ export class CommandProcessorService {
   private readonly terminalUI: TerminalUI;
 
   /**
-   * 构造函数
-   * @param sessionService - 会话服务实例
-   * @param terminalUI - 终端UI组件实例
+   * Constructor
+   * @param sessionService - Session service instance
+   * @param terminalUI - Terminal UI component instance
    */
   constructor(sessionService: SessionService, terminalUI: TerminalUI) {
     this.agentService = new AgentService();
@@ -34,34 +34,34 @@ export class CommandProcessorService {
   }
 
   /**
-   * 处理特殊命令
-   * @param input - 用户输入
-   * @returns 是否处理了命令
+   * Handle special commands
+   * @param input - User input
+   * @returns Whether the command was handled
    */
   public async handleSpecialCommand(input: string): Promise<boolean> {
     if (input.startsWith('/')) {
       return this.specialCommandHandler.handle(
         input,
         this.sessionService.getCurrentDir(),
-        [...this.sessionService.getMessages()] // 转换成可变数组
+        [...this.sessionService.getMessages()] // Convert to mutable array
       );
     }
     return false;
   }
 
   /**
-   * 处理代理响应
-   * @param options - 终端代理选项
-   * @returns 是否需要继续处理命令结果
+   * Process agent responses
+   * @param options - Terminal agent options
+   * @returns Whether further command result processing is needed
    */
   public async processAgentResponse(options: TerminalAgentOptions = {}): Promise<boolean> {
-    // 显示加载动画
+    // Show loading animation
     const spinner = this.terminalUI.showThinkingAnimation();
 
     try {
-      // 获取代理响应
+      // Get agent response
       const response = await this.agentService.streamResponse(
-        [...this.sessionService.getMessages()], // 转换成可变数组
+        [...this.sessionService.getMessages()], // Convert to mutable array
         {
           resourceId: this.sessionService.getResourceId(),
           threadId: this.sessionService.getThreadId()
@@ -70,136 +70,136 @@ export class CommandProcessorService {
 
       spinner.stop();
 
-      // 收集完整响应
+      // Collect complete response
       let responseText = '';
       for await (const chunk of response.textStream) {
         responseText += chunk;
       }
       
-      // 处理响应内容
+      // Process response content
       const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
       
-      // 显示处理后的内容
+      // Display processed content
       this.terminalUI.displayAIResponse(processedResponse.displayText);
 
-      // 添加助手消息（使用原始完整响应）
+      // Add assistant message (using original complete response)
       this.sessionService.addAssistantMessage(responseText);
 
-      // 处理<shell>标签并获取命令执行结果
+      // Process <shell> tags and get command execution results
       const commandResults = await this.responseProcessor.processShellCommands(
         responseText, 
         { 
           executeCommands: true,
-          interactive: true, // 启用交互式确认
-          interactiveCommand: true // 启用交互式命令执行
+          interactive: true, // Enable interactive confirmation
+          interactiveCommand: true // Enable interactive command execution
         }
       );
       
-      // 如果有命令执行结果，将其发送给 agent
+      // If there are command execution results, send them to the agent
       if (commandResults.length > 0) {
-        // 构建命令结果消息
+        // Build command results message
         const commandResultsMessage = this.responseProcessor.buildCommandResultsMessage(
           commandResults, 
           options.verbose
         );
         
-        // 将命令结果添加到消息历史中
+        // Add command results to message history
         this.sessionService.addUserMessage(commandResultsMessage);
         
-        // 需要继续处理命令结果
+        // Need to continue processing command results
         return true;
       }
 
       return false;
     } catch (error) {
-      spinner.fail('发生错误');
-      this.terminalUI.showError('错误:', error as Error);
+      spinner.fail('Error occurred');
+      this.terminalUI.showError('Error:', error as Error);
       return false;
     }
   }
 
   /**
-   * 处理命令执行结果并获取 agent 响应
-   * @param options - 终端代理选项
-   * @returns 是否需要继续处理命令结果
+   * Process command execution results and get agent response
+   * @param options - Terminal agent options
+   * @returns Whether further command result processing is needed
    */
   public async processCommandResults(options: TerminalAgentOptions = {}): Promise<boolean> {
     try {
-      // 获取代理响应（不显示加载动画）
+      // Get agent response (without showing loading animation)
       const response = await this.agentService.streamResponse(
-        [...this.sessionService.getMessages()], // 转换成可变数组
+        [...this.sessionService.getMessages()], // Convert to mutable array
         {
           resourceId: this.sessionService.getResourceId(),
           threadId: this.sessionService.getThreadId()
         }
       );
 
-      // 收集完整响应
+      // Collect complete response
       let responseText = '';
       for await (const chunk of response.textStream) {
         responseText += chunk;
       }
       
-      // 处理响应内容
+      // Process response content
       const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
       
-      // 显示处理后的内容
+      // Display processed content
       this.terminalUI.displayAIResponse(processedResponse.displayText);
 
-      // 添加助手消息（使用原始完整响应）
+      // Add assistant message (using original complete response)
       this.sessionService.addAssistantMessage(responseText);
 
-      // 处理<shell>标签并获取命令列表（不执行命令）
+      // Process <shell> tags and get command list (don't execute commands)
       const commandResults = await this.responseProcessor.processShellCommands(
         responseText, 
         { 
           executeCommands: false,
-          interactive: false // 在递归处理中不需要交互式确认
+          interactive: false // No need for interactive confirmation in recursive processing
         }
       );
       
-      // 如果有命令，将其发送给 agent（递归处理）
+      // If there are commands, send them to the agent (recursive processing)
       if (commandResults.length > 0) {
-        // 构建命令结果消息
+        // Build command results message
         const commandResultsMessage = this.responseProcessor.buildCommandResultsMessage(
           commandResults
         );
         
-        // 将命令结果添加到消息历史中
+        // Add command results to message history
         this.sessionService.addUserMessage(commandResultsMessage);
         
-        // 需要继续处理命令结果
+        // Need to continue processing command results
         return true;
       }
 
       return false;
     } catch (error) {
-      this.terminalUI.showError('处理命令结果时发生错误:', error as Error);
+      this.terminalUI.showError('Error processing command results:', error as Error);
       return false;
     }
   }
 
   /**
-   * 执行单个命令
-   * @param command - 执行命令
-   * @param options - 终端代理选项
+   * Execute a single command
+   * @param command - Command to execute
+   * @param options - Terminal agent options
    */
   public async executeOneCommand(command: string, options: TerminalAgentOptions = {}): Promise<void> {
-    // 添加系统消息
+    // Add system message
     this.sessionService.addSystemMessage();
 
-    // 添加用户消息
+    // Add user message
     this.sessionService.addUserMessage(command);
 
     try {
       let needsProcessing = await this.processAgentResponse(options);
       
-      // 循环处理命令结果，直到不再需要
+      // Process command results in a loop until no longer needed
       while (needsProcessing) {
         needsProcessing = await this.processCommandResults(options);
       }
     } catch (error) {
-      this.terminalUI.showError('命令执行失败:', error as Error);
+      this.terminalUI.showError('Command execution failed:', error as Error);
       throw error;
     }
   }

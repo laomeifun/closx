@@ -27,7 +27,7 @@ export class ShellExecutor {
    * @param cwd - The current working directory
    */
   public async executeInteractive(command: string, cwd: string): Promise<number> {
-    console.log(chalk.green(`执行: ${command}`));
+    console.log(chalk.green(`Executing: ${command}`));
     
     try {
       const childProcess = spawn(command, { 
@@ -39,19 +39,19 @@ export class ShellExecutor {
       return await new Promise<number>((resolve) => {
         childProcess.on('close', (code) => {
           if (code !== 0) {
-            console.log(chalk.red(`命令退出码: ${code || 0}`));
+            console.log(chalk.red(`Command exit code: ${code || 0}`));
           }
           resolve(code || 0);
         });
         
         childProcess.on('error', (err) => {
-          console.error(chalk.red('命令执行错误:'), err);
+          console.error(chalk.red('Command execution error:'), err);
           resolve(1);
         });
       });
     } catch (error: unknown) {
       const err = error as Error;
-      console.error(chalk.red('执行命令出错:'), err.message);
+      console.error(chalk.red('Error executing command:'), err.message);
       return 1;
     }
   }
@@ -63,7 +63,7 @@ export class ShellExecutor {
    */
   public async execute(command: string, cwd: string): Promise<ShellExecutionResult> {
     try {
-      const spinner = ora(`执行命令: ${command}`).start();
+      const spinner = ora(`Executing command: ${command}`).start();
       const { stdout, stderr } = await this.execPromise(command, { cwd });
       spinner.stop();
       

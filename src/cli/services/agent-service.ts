@@ -1,18 +1,18 @@
 /**
- * AI 代理交互服务
+ * AI Agent Interaction Service
  */
 import { shell, createShellAgent } from '../../mastra/agents/index';
 import { ChatMessage } from '../types/terminal-types';
 
 /**
- * 代理响应结果
+ * Agent Response Result
  */
 export type AgentResponse = {
   readonly textStream: AsyncIterable<string>;
 };
 
 /**
- * 代理请求选项
+ * Agent Request Options
  */
 export type AgentRequestOptions = {
   readonly resourceId: string;
@@ -20,62 +20,62 @@ export type AgentRequestOptions = {
 };
 
 /**
- * 代理服务类
- * 负责处理与 AI 代理的交互
+ * Agent Service Class
+ * Responsible for handling interactions with AI agents
  */
 export class AgentService {
   /**
-   * 向 AI 代理发送消息并获取流式响应
-   * @param messages - 对话历史消息
-   * @param options - 请求选项
-   * @returns 代理响应
+   * Send messages to AI agent and receive streaming response
+   * @param messages - Conversation history messages
+   * @param options - Request options
+   * @returns Agent response
    */
   public async streamResponse(
     messages: ChatMessage[], 
     options: AgentRequestOptions
   ): Promise<AgentResponse> {
-    // 确保shell已经初始化
+    // Ensure shell is initialized
     if (!shell) {
-      // 等待shell初始化完成
+      // Wait for shell initialization to complete
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // 如果shell仍然未初始化，则抛出错误
+      // If shell is still not initialized, throw error
       if (!shell) {
-        throw new Error('代理尚未初始化完成，请稍后再试');
+        throw new Error('Agent not yet initialized, please try again later');
       }
     }
     
-    // 只发送最新的用户消息，利用memory系统已有的历史记录
+    // Only send the latest user message, using the existing history from memory system
     const lastUserMessageIndex = [...messages].reverse().findIndex(msg => msg.role === 'user');
     
     if (lastUserMessageIndex !== -1) {
       const lastMessages = [
-        // 包含最新的系统消息（如果有）
+        // Include the latest system message (if any)
         ...messages.filter((msg, index) => 
           msg.role === 'system' && index > messages.length - lastUserMessageIndex - 2
         ),
-        // 最新的用户消息
+        // Latest user message
         messages[messages.length - lastUserMessageIndex - 1]
       ];
       
       return shell.stream(lastMessages, options);
     }
     
-    // 如果没找到用户消息，发送所有消息（防止错误）
+    // If no user message found, send all messages (prevent errors)
     return shell.stream(messages, options);
   }
   
   /**
-   * 生成唯一的资源 ID
-   * @returns 资源 ID 字符串
+   * Generate unique resource ID
+   * @returns Resource ID string
    */
   public generateResourceId(): string {
     return `resource-${Date.now()}`;
   }
   
   /**
-   * 生成唯一的线程 ID
-   * @returns 线程 ID 字符串
+   * Generate unique thread ID
+   * @returns Thread ID string
    */
   public generateThreadId(): string {
     return `thread-${Date.now()}`;

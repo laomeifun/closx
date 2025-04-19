@@ -1,6 +1,6 @@
 /**
- * 交互式终端代理
- * 提供与 AI 代理交互的命令行界面
+ * Interactive Terminal Agent
+ * Provides command-line interface for interacting with AI agent
  */
 import { Command } from 'commander';
 import chalk from 'chalk';
@@ -10,15 +10,15 @@ import { SessionService } from './services/session-service';
 import { CommandProcessorService } from './services/command-processor-service';
 import { TerminalUI } from './ui/terminal-ui';
 
-// 添加信号处理，使程序在 Ctrl+C 时干净地退出
+// Add signal handling for clean exit on Ctrl+C
 process.on('SIGINT', () => {
-  console.log('\n程序已终止');
+  console.log('\nProgram terminated');
   process.exit(0);
 });
 
 /**
- * 终端代理类
- * 整合各模块功能提供完整的交互式终端体验
+ * Terminal Agent Class
+ * Integrates various modules to provide a complete interactive terminal experience
  */
 export class TerminalAgent {
   private readonly program: Command;
@@ -27,7 +27,7 @@ export class TerminalAgent {
   private readonly terminalUI: TerminalUI;
 
   /**
-   * 构造函数
+   * Constructor
    */
   constructor() {
     this.program = new Command();
@@ -39,56 +39,56 @@ export class TerminalAgent {
   }
 
   /**
-   * 设置命令行参数
+   * Setup command-line arguments
    */
   private setupCommands(): void {
     this.program
       .name('closx')
-      .description('交互式终端代理')
+      .description('Interactive Terminal Agent')
       .version('1.0.0')
-      .option('-v, --verbose', '显示详细输出')
-      .option('-i, --interactive', '进入交互式界面')
-      .argument('[command]', '直接执行命令')
+      .option('-v, --verbose', 'Show detailed output')
+      .option('-i, --interactive', 'Enter interactive mode')
+      .argument('[command]', 'Execute command directly')
       .action(async (command, options) => {
         if (command) {
-          // 检查命令是否是特殊命令
+          // Check if command is a special command
           if (command.startsWith('/')) {
             await this.commandProcessor.handleSpecialCommand(command);
           } else {
-            // 直接执行普通命令（作为AI输入）
+            // Execute normal command (as AI input)
             await this.executeOneCommand(command, { verbose: options.verbose });
           }
         } else if (options.interactive || !command) {
-          // 交互式界面模式
+          // Interactive mode
           await this.startInteractiveSession({ verbose: options.verbose });
         }
       });
   }
 
   /**
-   * 解析命令行参数并启动程序
-   * @param args - 命令行参数
+   * Parse command-line arguments and start the program
+   * @param args - Command-line arguments
    */
   public async run(args: string[] = process.argv): Promise<void> {
     await this.program.parseAsync(args);
   }
 
   /**
-   * 启动交互式会话
-   * @param options - 终端代理选项
+   * Start interactive session
+   * @param options - Terminal agent options
    */
   private async startInteractiveSession(options: TerminalAgentOptions = {}): Promise<void> {
     this.terminalUI.showWelcomeMessage(this.sessionService.getCurrentDir());
 
-    // 添加系统消息
+    // Add system message
     this.sessionService.addSystemMessage();
 
     await this.chatLoop(options);
   }
 
   /**
-   * 主聊天循环
-   * @param options - 终端代理选项
+   * Main chat loop
+   * @param options - Terminal agent options
    */
   private async chatLoop(options: TerminalAgentOptions): Promise<void> {
     while (true) {
@@ -99,53 +99,53 @@ export class TerminalAgent {
           continue;
         }
 
-        // 处理特殊命令
+        // Handle special commands
         if (userInput.startsWith('/')) {
           const handled = await this.commandProcessor.handleSpecialCommand(userInput);
           if (handled) continue;
         }
 
-        // 添加用户消息
+        // Add user message
         this.sessionService.addUserMessage(userInput);
 
-        // 处理用户输入，获取代理响应
+        // Process user input and get agent response
         let needsProcessing = await this.commandProcessor.processAgentResponse(options);
         
-        // 循环处理命令结果，直到不再需要
+        // Loop processing command results until no longer needed
         while (needsProcessing) {
           needsProcessing = await this.commandProcessor.processCommandResults(options);
         }
       } catch (error) {
-        // 如果是 ExitPromptError，说明用户按了 Ctrl+C，直接退出
+        // If ExitPromptError, user pressed Ctrl+C, exit directly
         if (error && (error as any).name === 'ExitPromptError') {
           this.terminalUI.showExitMessage();
           process.exit(0);
-          return; // 防止后续代码执行
+          return; // Prevent subsequent code execution
         }
         
-        // 其他错误正常处理
-        console.error('\n程序运行出错:', error);
+        // Handle other errors normally
+        console.error('\nProgram error:', error);
       }
     }
   }
 
   /**
-   * 一次性执行命令
-   * @param command - 执行命令
-   * @param options - 终端代理选项
+   * Execute a single command
+   * @param command - Command to execute
+   * @param options - Terminal agent options
    */
   private async executeOneCommand(command: string, options: TerminalAgentOptions = {}): Promise<void> {
     try {
       await this.commandProcessor.executeOneCommand(command, options);
       
-      // 在一次性命令执行完成后自动退出
-      // 使用延时确保所有输出已经完成
+      // Automatically exit after executing one-time command
+      // Use timeout to ensure all output is completed
       setTimeout(() => {
-        this.terminalUI.showExitMessage('命令执行完成，程序即将退出...');
+        this.terminalUI.showExitMessage('Command execution completed, program will exit...');
         process.exit(0);
       }, 500);
     } catch (error) {
-      console.error('命令执行失败:', error);
+      console.error('Command execution failed:', error);
       process.exit(1);
     }
   }
