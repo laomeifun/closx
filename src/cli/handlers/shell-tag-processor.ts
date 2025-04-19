@@ -4,6 +4,8 @@
 import { ShellExecutor, ShellExecutionResult } from '../utils/shell-executor';
 import { ConsoleUtils } from '../utils/console-utils';
 import inquirer from 'inquirer';
+import { AgentService } from '../services/agent-service';
+import { ChatMessage } from '../types/terminal-types';
 
 /**
  * 命令执行结果
@@ -19,9 +21,11 @@ export type CommandExecutionResult = {
  */
 export class ShellTagProcessor {
   private readonly shellExecutor: ShellExecutor;
+  private readonly agentService: AgentService;
   
   constructor() {
     this.shellExecutor = new ShellExecutor();
+    this.agentService = new AgentService();
   }
   
   /**
@@ -97,16 +101,53 @@ export class ShellTagProcessor {
           if (options.interactiveCommand) {
             // 使用交互式模式执行命令
             console.log(ConsoleUtils.formatCommand(cmd));
-            const exitCode = await this.shellExecutor.executeInteractive(cmd, currentDir);
             
-            // 交互式命令没有标准输出收集，使用特殊提示
-            output = `[交互式命令已执行完成，退出码: ${exitCode}]`;
-            
-            result = {
-              exitCode: exitCode,
-              stdout: output,
-              stderr: ''
-            };
+            try {
+              // 先通过Agent服务发送命令给AI
+              // 创建一个特殊的消息，告诉agent执行交互式命令
+              const message: ChatMessage = {
+                role: 'user',
+                content: `请执行以下交互式命令：\n\n\`\`\`\n${cmd}\n\`\`\`\n\n这是一个交互式命令，请使用interactive-shell-execute工具执行。`
+              };
+              
+              // 生成临时的资源ID和线程ID
+              const resourceId = this.agentService.generateResourceId();
+              const threadId = this.agentService.generateThreadId();
+              
+              // 调用agent执行命令
+              const response = await this.agentService.streamResponse([message], { resourceId, threadId });
+              
+              // 收集所有输出
+              let agentOutput = '';
+              for await (const chunk of response.textStream) {
+                agentOutput += chunk;
+                // 实时显示输出
+                process.stdout.write(chunk);
+              }
+              
+              // 执行完成后，使用本地执行器执行命令
+              const exitCode = await this.shellExecutor.executeInteractive(cmd, currentDir);
+              
+              // 记录命令执行结果
+              output = `[交互式命令已执行完成，退出码: ${exitCode}]`;
+              
+              result = {
+                exitCode: exitCode,
+                stdout: output,
+                stderr: ''
+              };
+            } catch (error) {
+              ConsoleUtils.showError('通过代理执行命令失败', error);
+              // 失败时直接使用本地执行器执行命令
+              const exitCode = await this.shellExecutor.executeInteractive(cmd, currentDir);
+              output = `[交互式命令已执行完成，退出码: ${exitCode}]`;
+              
+              result = {
+                exitCode: exitCode,
+                stdout: output,
+                stderr: ''
+              };
+            }
           } else {
             // 使用非交互式执行收集输出
             result = await this.shellExecutor.execute(cmd, currentDir);

@@ -4,6 +4,7 @@ import { directoryInfoTool } from "../tools";
 import { shellPrompt } from "./prompt";
 import { getCurrentEnvironmentTool } from "../tools/get-current-environment";
 import { getCurrentDirectoryTool } from "../tools/get-current-directory";
+import { interactiveShellExecuteTool } from "../tools";
 import { shellMemory } from "./shellmemory";
 import config, { getBestAvailableModel, getModel, loadFromAllConfigLocations } from "../../config";
 
@@ -26,7 +27,7 @@ export const createShellAgent = async () => {
     name: "Shell",
     instructions: shellPrompt,
     model: modelInstance, // 这里传入的是一个配置好的模型实例
-    tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool },
+    tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, interactiveShellExecuteTool },
     memory: shellMemory,
   });
 };
@@ -45,7 +46,7 @@ createShellAgent().then(agent => {
     name: "Shell",
     instructions: shellPrompt,
     model: config.openaiApi("gpt-4o"),
-    tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool },
+    tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, interactiveShellExecuteTool },
     memory: shellMemory,
   });
 });
