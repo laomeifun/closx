@@ -26,6 +26,15 @@ export class ConsoleUtils {
   }
   
   /**
+   * 格式化命令显示
+   * @param command - 要格式化的命令
+   * @returns 格式化后的命令字符串
+   */
+  public static formatCommand(command: string): string {
+    return chalk.green(`执行: ${command}`);
+  }
+  
+  /**
    * 显示AI响应头
    */
   public static showResponseHeader(): void {

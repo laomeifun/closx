@@ -33,14 +33,18 @@ export const shellExecuteTool = createTool({
         cwd?: string;
         shell?: boolean;
         stdio?: any;
+        detached?: boolean;
       } = {
         shell: true, // 使用shell执行命令
-        stdio: context.interactive ? 'pipe' : 'pipe' // 交互式模式下使用pipe
+        stdio: 'inherit', // 直接继承父进程的标准输入输出
+        detached: false // 不分离进程，以便于控制
       };
       
       if (context.cwd) {
         options.cwd = context.cwd;
       }
+      
+      console.log(`执行: ${context.command}`);
       
       // 使用spawn执行命令
       const childProcess = spawn(cmd, args, options);
@@ -51,67 +55,65 @@ export const shellExecuteTool = createTool({
       // 创建一个标记，表示命令是否已经结束
       let commandFinished = false;
       
-      // 处理用户中断
-      process.on('SIGINT', () => {
+      // 创建一个一次性的SIGINT处理器
+      const sigintHandler = () => {
         if (!commandFinished) {
           console.log('\n用户中断了命令执行');
           childProcess.kill('SIGINT');
+          // 清理事件监听器
+          process.removeListener('SIGINT', sigintHandler);
           resolve({
-            stdout: stdoutData.trim(),
-            stderr: stderrData.trim() + '\n命令被用户中断',
+            stdout: stdoutData,
+            stderr: stderrData + '\n命令被用户中断',
             exitCode: 130, // 用户中断退出码
           });
         }
-      });
+      };
       
-      // 实时输出标准输出
-      childProcess.stdout.on('data', (data) => {
-        const output = data.toString();
-        stdoutData += output;
-        process.stdout.write(output); // 实时输出到控制台
-      });
+      // 添加SIGINT处理器
+      process.on('SIGINT', sigintHandler);
       
-      // 实时输出标准错误
-      childProcess.stderr.on('data', (data) => {
-        const output = data.toString();
-        stderrData += output;
-        process.stderr.write(output); // 实时输出到控制台
-      });
-      
-      // 如果是交互式命令，设置标准输入
-      if (context.interactive) {
-        // 创建readline接口
-        const rl = readline.createInterface({
-          input: process.stdin,
-          output: process.stdout,
-          terminal: true
+      // 如果不使用inherit模式，才需要手动收集输出
+      if (options.stdio !== 'inherit') {
+        // 收集标准输出
+        childProcess.stdout?.on('data', (data) => {
+          const output = data.toString();
+          stdoutData += output;
+          process.stdout.write(output);
         });
         
-        // 监听用户输入
-        rl.on('line', (input) => {
-          if (childProcess.stdin.writable) {
-            childProcess.stdin.write(input + '\n');
-          }
-        });
-        
-        // 命令结束时关闭readline
-        childProcess.on('close', () => {
-          rl.close();
-        });
-        
-        // 当readline关闭时恢复标准输入
-        rl.on('close', () => {
-          process.stdin.resume();
+        // 收集标准错误
+        childProcess.stderr?.on('data', (data) => {
+          const output = data.toString();
+          stderrData += output;
+          process.stderr.write(output);
         });
       }
       
       // 命令执行完成后返回结果
       childProcess.on('close', (code) => {
         commandFinished = true;
+        // 清理事件监听器
+        process.removeListener('SIGINT', sigintHandler);
+        
         resolve({
-          stdout: stdoutData.trim(),
-          stderr: stderrData.trim(),
+          stdout: stdoutData,
+          stderr: stderrData,
           exitCode: code,
+        });
+      });
+      
+      // 处理错误
+      childProcess.on('error', (error) => {
+        commandFinished = true;
+        // 清理事件监听器
+        process.removeListener('SIGINT', sigintHandler);
+        
+        console.error(`命令执行错误: ${error.message}`);
+        resolve({
+          stdout: stdoutData,
+          stderr: `${stderrData}\n命令执行错误: ${error.message}`,
+          exitCode: 1,
         });
       });
       
@@ -120,9 +122,12 @@ export const shellExecuteTool = createTool({
         setTimeout(() => {
           if (!commandFinished) {
             childProcess.kill();
+            // 清理事件监听器
+            process.removeListener('SIGINT', sigintHandler);
+            
             resolve({
-              stdout: stdoutData.trim(),
-              stderr: stderrData.trim() + '\n命令执行超时',
+              stdout: stdoutData,
+              stderr: `${stderrData}\n命令执行超时`,
               exitCode: 124, // 超时退出码
             });
           }
