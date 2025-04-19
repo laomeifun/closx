@@ -1,5 +1,5 @@
 /**
- * Shell 标签处理模块
+ * Shell Tag Processor Module
  */
 import { ShellExecutor, ShellExecutionResult } from '../utils/shell-executor';
 import { ConsoleUtils } from '../utils/console-utils';
@@ -8,7 +8,7 @@ import { AgentService } from '../services/agent-service';
 import { ChatMessage } from '../types/terminal-types';
 
 /**
- * 命令执行结果
+ * Command Execution Result
  */
 export type CommandExecutionResult = {
   readonly command: string;
@@ -17,7 +17,7 @@ export type CommandExecutionResult = {
 };
 
 /**
- * Shell 标签处理器
+ * Shell Tag Processor
  */
 export class ShellTagProcessor {
   private readonly shellExecutor: ShellExecutor;
@@ -29,11 +29,11 @@ export class ShellTagProcessor {
   }
   
   /**
-   * 处理响应中的 <shell> 标签
-   * @param response - AI 响应内容
-   * @param currentDir - 当前工作目录
-   * @param options - 选项
-   * @returns 命令执行结果数组
+   * Process <shell> tags in response
+   * @param response - AI response content
+   * @param currentDir - Current working directory
+   * @param options - Options
+   * @returns Array of command execution results
    */
   public async processShellTags(
     response: string, 
@@ -41,19 +41,19 @@ export class ShellTagProcessor {
     options: { 
       executeCommands?: boolean; 
       interactive?: boolean;
-      interactiveCommand?: boolean; // 是否以交互式模式执行命令
+      interactiveCommand?: boolean; // Whether to execute commands in interactive mode
     } = { executeCommands: true, interactive: true, interactiveCommand: false }
   ): Promise<CommandExecutionResult[]> {
-    // 查找<shell></shell>标签内的内容
+    // Find content inside <shell></shell> tags
     const shellTagRegex = /<shell>([\s\S]*?)<\/shell>/g;
     let match;
     const commands: string[] = [];
   
     while ((match = shellTagRegex.exec(response)) !== null) {
       if (match[1]) {
-        // 去除所有的反引号和可能的 Markdown 格式
+        // Remove all backticks and possible Markdown formatting
         const cmd = match[1].trim()
-          .replace(/`/g, '')   // 移除所有反引号
+          .replace(/`/g, '')   // Remove all backticks
           .trim();
           
         if (cmd) {
@@ -66,25 +66,25 @@ export class ShellTagProcessor {
       return [];
     }
   
-    // 收集命令结果
+    // Collect command results
     const results: CommandExecutionResult[] = [];
     
-    // 如果需要执行命令
+    // If commands need to be executed
     if (options.executeCommands) {
-      ConsoleUtils.showWarning('\n检测到命令:');
+      ConsoleUtils.showWarning('\nCommands detected:');
       
-      // 显示所有将要执行的命令
+      // Show all commands to be executed
       for (let i = 0; i < commands.length; i++) {
         console.log(`${i + 1}. ${ConsoleUtils.formatCommand(commands[i])}`);
       }
       
-      // 如果是交互式模式，询问用户是否执行
+      // If in interactive mode, ask user for confirmation
       let shouldExecute = true;
       if (options.interactive && commands.length > 0) {
         const { confirm } = await inquirer.prompt({
           type: 'confirm',
           name: 'confirm',
-          message: '是否执行以上命令？',
+          message: 'Execute these commands?',
           default: true
         });
         
@@ -92,44 +92,44 @@ export class ShellTagProcessor {
       }
       
       if (shouldExecute) {
-        // 执行所有命令
+        // Execute all commands
         for (const cmd of commands) {
           let result: ShellExecutionResult;
           let output: string;
           
-          // 根据是否交互式执行命令
+          // Based on whether to execute in interactive mode
           if (options.interactiveCommand) {
-            // 使用交互式模式执行命令
+            // Use interactive mode to execute command
             console.log(ConsoleUtils.formatCommand(cmd));
             
             try {
-              // 先通过Agent服务发送命令给AI
-              // 创建一个特殊的消息，告诉agent执行交互式命令
+              // First send command to AI via Agent service
+              // Create a special message to tell agent to execute interactive command
               const message: ChatMessage = {
                 role: 'user',
-                content: `请执行以下交互式命令：\n\n\`\`\`\n${cmd}\n\`\`\`\n\n这是一个交互式命令，请使用interactive-shell-execute工具执行。`
+                content: `Please execute the following interactive command:\n\n\`\`\`\n${cmd}\n\`\`\`\n\nThis is an interactive command, please use interactive-shell-execute tool to execute.`
               };
               
-              // 生成临时的资源ID和线程ID
+              // Generate temporary resource ID and thread ID
               const resourceId = this.agentService.generateResourceId();
               const threadId = this.agentService.generateThreadId();
               
-              // 调用agent执行命令
+              // Call agent to execute command
               const response = await this.agentService.streamResponse([message], { resourceId, threadId });
               
-              // 收集所有输出
+              // Collect all output
               let agentOutput = '';
               for await (const chunk of response.textStream) {
                 agentOutput += chunk;
-                // 实时显示输出
+                // Display output in real-time
                 process.stdout.write(chunk);
               }
               
-              // 执行完成后，使用本地执行器执行命令
+              // After completion, use local executor to execute command
               const exitCode = await this.shellExecutor.executeInteractive(cmd, currentDir);
               
-              // 记录命令执行结果
-              output = `[交互式命令已执行完成，退出码: ${exitCode}]`;
+              // Record command execution result
+              output = `[Interactive command completed, exit code: ${exitCode}]`;
               
               result = {
                 exitCode: exitCode,
@@ -137,10 +137,10 @@ export class ShellTagProcessor {
                 stderr: ''
               };
             } catch (error) {
-              ConsoleUtils.showError('通过代理执行命令失败', error);
-              // 失败时直接使用本地执行器执行命令
+              ConsoleUtils.showError('Failed to execute command through agent', error);
+              // On failure, directly use local executor to execute command
               const exitCode = await this.shellExecutor.executeInteractive(cmd, currentDir);
-              output = `[交互式命令已执行完成，退出码: ${exitCode}]`;
+              output = `[Interactive command completed, exit code: ${exitCode}]`;
               
               result = {
                 exitCode: exitCode,
@@ -149,18 +149,18 @@ export class ShellTagProcessor {
               };
             }
           } else {
-            // 使用非交互式执行收集输出
+            // Use non-interactive execution to collect output
             result = await this.shellExecutor.execute(cmd, currentDir);
             
-            // 收集命令执行结果
+            // Collect command execution result
             output = result.stdout + (result.stderr ? `\n${result.stderr}` : '');
             
-            // 展示命令和输出
+            // Display command and output
             console.log(ConsoleUtils.formatCommand(cmd));
             console.log(output);
           }
           
-          // 添加到结果数组
+          // Add to results array
           results.push({
             command: cmd,
             output: output,
@@ -168,23 +168,23 @@ export class ShellTagProcessor {
           });
         }
       } else {
-        ConsoleUtils.showInfo('命令执行已取消');
+        ConsoleUtils.showInfo('Command execution cancelled');
         
-        // 如果用户选择不执行，返回空输出
+        // If user chooses not to execute, return empty output
         for (const cmd of commands) {
           results.push({
             command: cmd,
-            output: '命令执行已取消',
+            output: 'Command execution cancelled',
             exitCode: 0
           });
         }
       }
     } else {
-      // 如果不需要执行命令，只收集命令
+      // If commands don't need to be executed, just collect them
       for (const cmd of commands) {
         results.push({
           command: cmd,
-          output: '',  // 空输出，因为命令没有被执行
+          output: '',  // Empty output, because command was not executed
           exitCode: 0
         });
       }

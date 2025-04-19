@@ -36,4 +36,4 @@ export const shellMemory = new Memory({
             use: "tool-call", // Recommended setting
         },
     }
-});                  
+});

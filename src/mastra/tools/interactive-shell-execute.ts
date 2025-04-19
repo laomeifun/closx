@@ -5,110 +5,110 @@ import { promisify } from 'util';
 import * as readline from 'readline';
 
 /**
- * 交互式执行shell命令的工具
- * 允许用户与命令进行交互，并在命令完成后注入执行结果
+ * Interactive shell command execution tool
+ * Allows users to interact with commands and injects execution results after command completion
  */
 export const interactiveShellExecuteTool = createTool({
   id: 'interactive-shell-execute',
-  description: '以交互式模式执行shell命令，允许用户与命令交互',
+  description: 'Execute shell commands in interactive mode, allowing user interaction with the command',
   inputSchema: z.object({
-    command: z.string().describe('要执行的shell命令'),
-    cwd: z.string().optional().describe('执行命令的工作目录'),
-    timeout: z.number().optional().describe('命令执行超时时间(毫秒)'),
+    command: z.string().describe('The shell command to execute'),
+    cwd: z.string().optional().describe('Working directory for command execution'),
+    timeout: z.number().optional().describe('Command execution timeout (milliseconds)'),
   }),
   outputSchema: z.object({
-    stdout: z.string().describe('命令的标准输出（交互式模式下为特殊提示）'),
-    stderr: z.string().describe('命令的标准错误输出'),
-    exitCode: z.number().nullable().describe('命令的退出码，如果成功则为0'),
+    stdout: z.string().describe('Standard output of the command (special message in interactive mode)'),
+    stderr: z.string().describe('Standard error output of the command'),
+    exitCode: z.number().nullable().describe('Exit code of the command, 0 if successful'),
   }),
   execute: async ({ context }) => {
     return new Promise((resolve) => {
-      // 解析命令和参数
+      // Parse command and arguments
       const args = context.command.split(' ');
       const cmd = args.shift() || '';
       
-      // 设置选项
+      // Set options
       const options: {
         cwd?: string;
         shell?: boolean;
         stdio?: any;
         detached?: boolean;
       } = {
-        shell: true, // 使用shell执行命令
-        stdio: 'inherit', // 直接继承父进程的标准输入输出，允许交互
-        detached: false // 不分离进程，以便于控制
+        shell: true, // Use shell to execute command
+        stdio: 'inherit', // Directly inherit parent process stdio for interaction
+        detached: false // Don't detach process for better control
       };
       
       if (context.cwd) {
         options.cwd = context.cwd;
       }
       
-      console.log(`执行交互式命令: ${context.command}`);
+      console.log(`Executing interactive command: ${context.command}`);
       
-      // 使用spawn执行命令
+      // Use spawn to execute command
       const childProcess = spawn(cmd, args, options);
       
-      // 创建一个标记，表示命令是否已经结束
+      // Create a flag indicating if the command has finished
       let commandFinished = false;
       
-      // 创建一个一次性的SIGINT处理器
+      // Create a one-time SIGINT handler
       const sigintHandler = () => {
         if (!commandFinished) {
-          console.log('\n用户中断了命令执行');
+          console.log('\nUser interrupted command execution');
           childProcess.kill('SIGINT');
-          // 清理事件监听器
+          // Clean up event listeners
           process.removeListener('SIGINT', sigintHandler);
           resolve({
-            stdout: '[交互式命令被用户中断]',
+            stdout: '[Interactive command was interrupted by user]',
             stderr: '',
-            exitCode: 130, // 用户中断退出码
+            exitCode: 130, // User interrupt exit code
           });
         }
       };
       
-      // 添加SIGINT处理器
+      // Add SIGINT handler
       process.on('SIGINT', sigintHandler);
       
-      // 命令执行完成后返回结果
+      // Return result after command execution completes
       childProcess.on('close', (code) => {
         commandFinished = true;
-        // 清理事件监听器
+        // Clean up event listeners
         process.removeListener('SIGINT', sigintHandler);
         
-        // 交互式命令没有标准输出收集，使用特殊提示
+        // Interactive commands don't collect standard output, use special message
         resolve({
-          stdout: `[交互式命令已执行完成，退出码: ${code}]`,
+          stdout: `[Interactive command completed with exit code: ${code}]`,
           stderr: '',
           exitCode: code,
         });
       });
       
-      // 处理错误
+      // Handle errors
       childProcess.on('error', (error) => {
         commandFinished = true;
-        // 清理事件监听器
+        // Clean up event listeners
         process.removeListener('SIGINT', sigintHandler);
         
-        console.error(`命令执行错误: ${error.message}`);
+        console.error(`Command execution error: ${error.message}`);
         resolve({
           stdout: '',
-          stderr: `命令执行错误: ${error.message}`,
+          stderr: `Command execution error: ${error.message}`,
           exitCode: 1,
         });
       });
       
-      // 设置超时
+      // Set timeout
       if (context.timeout) {
         setTimeout(() => {
           if (!commandFinished) {
             childProcess.kill();
-            // 清理事件监听器
+            // Clean up event listeners
             process.removeListener('SIGINT', sigintHandler);
             
             resolve({
               stdout: '',
-              stderr: `命令执行超时`,
-              exitCode: 124, // 超时退出码
+              stderr: `Command execution timed out`,
+              exitCode: 124, // Timeout exit code
             });
           }
         }, context.timeout);

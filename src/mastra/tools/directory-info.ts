@@ -5,35 +5,35 @@ import * as path from 'path';
 import { promisify } from 'util';
 
 /**
- * 获取目录信息的工具
- * 返回指定目录的详细信息，包括文件列表、子目录和基本统计信息
+ * Directory information tool
+ * Returns detailed information about the specified directory, including file list, subdirectories, and basic statistics
  */
 export const directoryInfoTool = createTool({
   id: 'directory-info',
-  description: '获取指定目录的详细信息',
+  description: 'Get detailed information about the specified directory',
   inputSchema: z.object({
-    path: z.string().optional().describe('要获取信息的目录路径，默认为当前工作目录'),
-    includeHidden: z.boolean().optional().describe('是否包含隐藏文件，默认为false'),
-    depth: z.number().optional().describe('递归深度，默认为1（只显示直接子项）'),
+    path: z.string().optional().describe('Directory path to get information for, defaults to current working directory'),
+    includeHidden: z.boolean().optional().describe('Whether to include hidden files, defaults to false'),
+    depth: z.number().optional().describe('Recursion depth, defaults to 1 (only direct children)'),
   }),
   outputSchema: z.object({
-    path: z.string().describe('目录的绝对路径'),
-    exists: z.boolean().describe('目录是否存在'),
-    isDirectory: z.boolean().describe('路径是否为目录'),
+    path: z.string().describe('Absolute path of the directory'),
+    exists: z.boolean().describe('Whether the directory exists'),
+    isDirectory: z.boolean().describe('Whether the path is a directory'),
     items: z.array(z.object({
-      name: z.string().describe('文件或目录名称'),
-      type: z.enum(['file', 'directory', 'symlink', 'other']).describe('项目类型'),
-      size: z.number().optional().describe('文件大小（字节）'),
-      isHidden: z.boolean().describe('是否为隐藏文件'),
-      extension: z.string().optional().describe('文件扩展名（如果是文件）'),
-      modifiedTime: z.string().describe('最后修改时间'),
-    })).describe('目录中的项目列表'),
+      name: z.string().describe('File or directory name'),
+      type: z.enum(['file', 'directory', 'symlink', 'other']).describe('Item type'),
+      size: z.number().optional().describe('File size (bytes)'),
+      isHidden: z.boolean().describe('Whether it is a hidden file'),
+      extension: z.string().optional().describe('File extension (if it is a file)'),
+      modifiedTime: z.string().describe('Last modified time'),
+    })).describe('List of items in the directory'),
     stats: z.object({
-      totalItems: z.number().describe('项目总数'),
-      totalFiles: z.number().describe('文件总数'),
-      totalDirectories: z.number().describe('目录总数'),
-      totalSize: z.number().describe('所有文件的总大小（字节）'),
-    }).describe('目录统计信息'),
+      totalItems: z.number().describe('Total number of items'),
+      totalFiles: z.number().describe('Total number of files'),
+      totalDirectories: z.number().describe('Total number of directories'),
+      totalSize: z.number().describe('Total size of all files (bytes)'),
+    }).describe('Directory statistics'),
   }),
   execute: async ({ context }) => {
     const targetPath = context.path || process.cwd();
@@ -41,7 +41,7 @@ export const directoryInfoTool = createTool({
     const depth = context.depth || 1;
 
     try {
-      // 检查路径是否存在
+      // Check if path exists
       const stat = await promisify(fs.stat)(targetPath);
       const isDirectory = stat.isDirectory();
 
@@ -60,10 +60,10 @@ export const directoryInfoTool = createTool({
         };
       }
 
-      // 读取目录内容
+      // Read directory contents
       const items = await getDirectoryContents(targetPath, includeHidden, depth);
 
-      // 计算统计信息
+      // Calculate statistics
       const stats = {
         totalItems: items.length,
         totalFiles: items.filter(item => item.type === 'file').length,
@@ -79,7 +79,7 @@ export const directoryInfoTool = createTool({
         stats,
       };
     } catch (error) {
-      // 处理路径不存在的情况
+      // Handle case where path doesn't exist
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return {
           path: path.resolve(targetPath),
@@ -95,18 +95,18 @@ export const directoryInfoTool = createTool({
         };
       }
       
-      // 重新抛出其他错误
+      // Re-throw other errors
       throw error;
     }
   },
 });
 
 /**
- * 获取目录内容的辅助函数
- * @param dirPath - 目录路径
- * @param includeHidden - 是否包含隐藏文件
- * @param depth - 递归深度
- * @returns 目录内容列表
+ * Helper function to get directory contents
+ * @param dirPath - Directory path
+ * @param includeHidden - Whether to include hidden files
+ * @param depth - Recursion depth
+ * @returns List of directory contents
  */
 async function getDirectoryContents(
   dirPath: string, 
@@ -135,7 +135,7 @@ async function getDirectoryContents(
   }> = [];
   
   for (const name of fileNames) {
-    // 检查是否为隐藏文件
+    // Check if it's a hidden file
     const isHidden = name.startsWith('.');
     if (isHidden && !includeHidden) {
       continue;
@@ -178,7 +178,7 @@ async function getDirectoryContents(
       
       result.push(item);
     } catch (error) {
-      // 忽略无法访问的文件
+      // Ignore inaccessible files
       continue;
     }
   }

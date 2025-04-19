@@ -1,12 +1,12 @@
 /**
- * 特殊命令处理模块
+ * Special Command Handler Module
  */
 import { ChatMessage } from '../types/terminal-types';
 import { ConsoleUtils } from '../utils/console-utils';
 import { ShellExecutor } from '../utils/shell-executor';
 
 /**
- * 特殊命令处理器
+ * Special Command Handler
  */
 export class SpecialCommandHandler {
   private readonly shellExecutor: ShellExecutor;
@@ -16,11 +16,11 @@ export class SpecialCommandHandler {
   }
 
   /**
-   * 处理特殊命令
-   * @param command - 用户输入的命令
-   * @param currentDir - 当前工作目录
-   * @param messages - 消息历史记录
-   * @returns 是否处理了命令
+   * Handle special commands
+   * @param command - User input command
+   * @param currentDir - Current working directory
+   * @param messages - Message history
+   * @returns Whether the command was handled
    */
   public async handle(
     command: string, 
@@ -29,34 +29,34 @@ export class SpecialCommandHandler {
   ): Promise<boolean> {
     const cmd = command.trim().toLowerCase();
 
-    // 帮助命令
+    // Help command
     if (cmd === '/help') {
       ConsoleUtils.showHelpInfo();
       return true;
     }
 
-    // 退出命令
+    // Exit command
     if (cmd === '/quit') {
-      ConsoleUtils.showInfo('再见!');
+      ConsoleUtils.showInfo('Goodbye!');
       process.exit(0);
     }
 
-    // 执行shell命令
+    // Execute shell command
     if (cmd.startsWith('/exec ')) {
       await this.handleExecCommand(cmd.substring(6).trim(), currentDir);
       return true;
     }
 
-    // 清除对话历史
+    // Clear conversation history
     if (cmd === '/clear') {
       const systemMessages = messages.filter(msg => msg.role === 'system');
       messages.length = 0;
       systemMessages.forEach(msg => messages.push(msg));
-      ConsoleUtils.showSuccess('已清除对话历史');
+      ConsoleUtils.showSuccess('Conversation history cleared');
       return true;
     }
 
-    // 显示环境信息
+    // Display environment information
     if (cmd === '/env') {
       await this.handleEnvCommand(currentDir);
       return true;
@@ -66,39 +66,39 @@ export class SpecialCommandHandler {
   }
 
   /**
-   * 处理/exec命令
-   * @param shellCmd - shell命令
-   * @param currentDir - 当前工作目录
+   * Handle /exec command
+   * @param shellCmd - Shell command
+   * @param currentDir - Current working directory
    */
   private async handleExecCommand(shellCmd: string, currentDir: string): Promise<void> {
     try {
       const result = await this.shellExecutor.execute(shellCmd, currentDir);
       
       if (result.stdout) {
-        ConsoleUtils.showInfo('输出:');
+        ConsoleUtils.showInfo('Output:');
         console.log(result.stdout);
       }
       
       if (result.stderr) {
-        ConsoleUtils.showError('错误:');
+        ConsoleUtils.showError('Error:');
         console.log(result.stderr);
       }
     } catch (error: unknown) {
-      ConsoleUtils.showError('执行命令失败:', error as Error);
+      ConsoleUtils.showError('Failed to execute command:', error as Error);
     }
   }
 
   /**
-   * 处理/env命令
-   * @param currentDir - 当前工作目录
+   * Handle /env command
+   * @param currentDir - Current working directory
    */
   private async handleEnvCommand(currentDir: string): Promise<void> {
     try {
       const result = await this.shellExecutor.execute('printenv', currentDir);
-      ConsoleUtils.showInfo('环境变量:');
+      ConsoleUtils.showInfo('Environment variables:');
       console.log(result.stdout);
     } catch (error: unknown) {
-      ConsoleUtils.showError('获取环境变量失败:', error as Error);
+      ConsoleUtils.showError('Failed to get environment variables:', error as Error);
     }
   }
 }

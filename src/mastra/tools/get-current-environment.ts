@@ -4,98 +4,98 @@ import os from 'os';
 import process from 'process';
 
 /**
- * 环境信息接口定义
+ * Environment information interface definition
  */
 export interface EnvironmentInfo {
-  /** 当前工作目录 */
+  /** Current working directory */
   cwd: string;
-  /** 当前用户名 */
+  /** Current username */
   user: string;
-  /** 默认Shell */
+  /** Default shell */
   shell: string | null;
-  /** 系统PATH环境变量 */
+  /** System PATH environment variable */
   path: string | null;
-  /** PATH环境变量拆分为数组（可选） */
+  /** PATH environment variable split into an array (optional) */
   pathEntries?: string[];
-  /** 操作系统平台 */
+  /** Operating system platform */
   platform: string;
-  /** 操作系统版本 */
+  /** Operating system release */
   osRelease: string;
-  /** 操作系统类型 */
+  /** Operating system type */
   osType: string;
-  /** 系统架构 */
+  /** System architecture */
   arch: string;
-  /** 系统主机名 */
+  /** System hostname */
   hostname: string;
-  /** Node.js版本 */
+  /** Node.js version */
   nodeVersion: string;
-  /** 语言环境设置 */
+  /** Language environment settings */
   lang: string | null;
-  /** 用户主目录 */
+  /** User home directory */
   home: string;
-  /** 系统运行时间（秒） */
+  /** System uptime (seconds) */
   uptime: number;
-  /** 内存信息 */
+  /** Memory information */
   memory: {
-    /** 总内存（字节） */
+    /** Total memory (bytes) */
     total: number;
-    /** 空闲内存（字节） */
+    /** Free memory (bytes) */
     free: number;
   };
-  /** CPU信息摘要 */
+  /** CPU summary information */
   cpuSummary?: {
-    /** CPU型号 */
+    /** CPU model */
     model: string;
-    /** CPU核心数 */
+    /** Number of CPU cores */
     cores: number;
   };
-  /** CPU详细信息（可选） */
+  /** Detailed CPU information (optional) */
   cpus?: Array<{
-    /** CPU型号 */
+    /** CPU model */
     model: string;
-    /** CPU速度（MHz） */
+    /** CPU speed (MHz) */
     speed: number;
   }>;
 }
 
 /**
- * 获取当前环境信息的工具
- * 返回系统环境的详细信息，包括工作目录、用户、Shell、PATH等
+ * Tool to get current environment information
+ * Returns detailed information about the system environment, including working directory, user, shell, PATH, etc.
  */
 export const getCurrentEnvironmentTool = createTool({
   id: 'get-current-environment',
-  description: '获取当前系统环境的详细信息',
+  description: 'Get detailed information about the current system environment',
   inputSchema: z.object({
-    includePathDetails: z.boolean().optional().describe('是否包含PATH环境变量的详细分析，默认为false'),
-    includeCpuDetails: z.boolean().optional().describe('是否包含详细CPU信息，默认为false'),
+    includePathDetails: z.boolean().optional().describe('Whether to include detailed analysis of PATH environment variable, defaults to false'),
+    includeCpuDetails: z.boolean().optional().describe('Whether to include detailed CPU information, defaults to false'),
   }),
   outputSchema: z.object({
-    cwd: z.string().describe('当前工作目录'),
-    user: z.string().describe('当前用户名'),
-    shell: z.string().nullable().describe('默认Shell'),
-    path: z.string().nullable().describe('系统PATH环境变量'),
-    pathEntries: z.array(z.string()).optional().describe('PATH环境变量拆分为数组'),
-    platform: z.string().describe('操作系统平台（如linux、darwin、win32）'),
-    osRelease: z.string().describe('操作系统版本'),
-    osType: z.string().describe('操作系统类型'),
-    arch: z.string().describe('系统架构（如x64、arm64）'),
-    hostname: z.string().describe('系统主机名'),
-    nodeVersion: z.string().describe('Node.js版本'),
-    lang: z.string().nullable().describe('语言环境设置'),
-    home: z.string().describe('用户主目录'),
-    uptime: z.number().describe('系统运行时间（秒）'),
+    cwd: z.string().describe('Current working directory'),
+    user: z.string().describe('Current username'),
+    shell: z.string().nullable().describe('Default shell'),
+    path: z.string().nullable().describe('System PATH environment variable'),
+    pathEntries: z.array(z.string()).optional().describe('PATH environment variable split into an array'),
+    platform: z.string().describe('Operating system platform (e.g., linux, darwin, win32)'),
+    osRelease: z.string().describe('Operating system version'),
+    osType: z.string().describe('Operating system type'),
+    arch: z.string().describe('System architecture (e.g., x64, arm64)'),
+    hostname: z.string().describe('System hostname'),
+    nodeVersion: z.string().describe('Node.js version'),
+    lang: z.string().nullable().describe('Language environment settings'),
+    home: z.string().describe('User home directory'),
+    uptime: z.number().describe('System uptime (seconds)'),
     memory: z.object({
-      total: z.number().describe('总内存（字节）'),
-      free: z.number().describe('空闲内存（字节）'),
-    }).describe('内存信息'),
+      total: z.number().describe('Total memory (bytes)'),
+      free: z.number().describe('Free memory (bytes)'),
+    }).describe('Memory information'),
     cpuSummary: z.object({
-      model: z.string().describe('CPU型号'),
-      cores: z.number().describe('CPU核心数'),
-    }).optional().describe('CPU信息摘要'),
+      model: z.string().describe('CPU model'),
+      cores: z.number().describe('Number of CPU cores'),
+    }).optional().describe('CPU summary information'),
     cpus: z.array(z.object({
-      model: z.string().describe('CPU型号'),
-      speed: z.number().describe('CPU速度（MHz）'),
-    })).optional().describe('CPU详细信息'),
+      model: z.string().describe('CPU model'),
+      speed: z.number().describe('CPU speed (MHz)'),
+    })).optional().describe('Detailed CPU information'),
   }),
   execute: async ({ context }) => {
     const includePathDetails = context.includePathDetails || false;
@@ -104,7 +104,7 @@ export const getCurrentEnvironmentTool = createTool({
     const pathEnv = process.env.PATH || process.env.Path;
     const cpuInfo = os.cpus();
     
-    // 准备基本结果对象
+    // Prepare base result object
     const result: EnvironmentInfo = {
       cwd: process.cwd(),
       user: userInfo.username,
@@ -123,20 +123,20 @@ export const getCurrentEnvironmentTool = createTool({
         total: os.totalmem(),
         free: os.freemem(),
       },
-      // 添加CPU摘要信息
+      // Add CPU summary information
       cpuSummary: cpuInfo.length > 0 ? {
         model: cpuInfo[0].model.trim(),
         cores: cpuInfo.length,
       } : undefined,
     };
     
-    // 如果需要包含PATH详情，则添加拆分后的路径条目
+    // If PATH details are needed, add the split path entries
     if (includePathDetails && pathEnv) {
       const pathSeparator = process.platform === 'win32' ? ';' : ':';
       result.pathEntries = pathEnv.split(pathSeparator);
     }
     
-    // 只有在明确请求时才包含详细CPU信息
+    // Only include detailed CPU information when explicitly requested
     if (includeCpuDetails) {
       result.cpus = cpuInfo.map(cpu => ({
         model: cpu.model,
@@ -149,10 +149,10 @@ export const getCurrentEnvironmentTool = createTool({
 });
 
 // /**
-//  * 获取当前环境信息
+//  * Get current environment information
 //  * 
-//  * 这是一个便捷函数，直接调用getCurrentEnvironmentTool工具
+//  * This is a convenience function that directly calls the getCurrentEnvironmentTool
 //  * 
-//  * @returns {Promise<EnvironmentInfo>} 包含环境信息的对象
+//  * @returns {Promise<EnvironmentInfo>} Object containing environment information
 //  */
 // export const getCurrentEnvironment = getCurrentEnvironmentTool;

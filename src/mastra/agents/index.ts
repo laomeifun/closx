@@ -8,40 +8,40 @@ import { interactiveShellExecuteTool } from "../tools";
 import { shellMemory } from "./shellmemory";
 import config, { getBestAvailableModel, getModel, loadFromAllConfigLocations } from "../../config";
 
-// 创建Agent
-// 使用函数式方式，确保配置文件加载完成后再创建Agent
+// Create Agent
+// Use functional approach to ensure configuration files are loaded before creating Agent
 export const createShellAgent = async () => {
-  // 先手动加载所有配置文件
+  // First manually load all configuration files
   await loadFromAllConfigLocations();
   
-  // 获取所有模型
+  // Get all models
   const allModels = config.modelRegistry.getAllModels();
-  // 已加载模型配置
+  // Loaded model configurations
   
-  // 获取最佳可用模型实例
-  // 会自动选择配置文件中的模型，不需要指定模型ID
+  // Get the best available model instance
+  // Will automatically select the model from configuration file, no need to specify model ID
   const modelInstance = getBestAvailableModel();
   
-  // 创建Agent
+  // Create Agent
   return new Agent({
     name: "Shell",
     instructions: shellPrompt,
-    model: modelInstance, // 这里传入的是一个配置好的模型实例
+    model: modelInstance, // Here we pass a configured model instance
     tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, interactiveShellExecuteTool },
     memory: shellMemory,
   });
 };
 
-// 初始化shell代理
+// Initialize shell agent
 export let shell: Agent;
 
-// 立即初始化shell代理
+// Immediately initialize shell agent
 createShellAgent().then(agent => {
   shell = agent;
-  // 初始化shell代理完成
+  // Shell agent initialization complete
 }).catch(error => {
-  // 初始化shell代理失败
-  // 创建一个默认的Agent作为备用
+  // Shell agent initialization failed
+  // Create a default Agent as fallback
   shell = new Agent({
     name: "Shell",
     instructions: shellPrompt,
