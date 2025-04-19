@@ -16,9 +16,6 @@ export const createShellAgent = async () => {
   const allModels = config.modelRegistry.getAllModels();
   // 已加载模型配置
   
-  // 如果有配置文件中的模型，输出详细信息
-  // 如果有配置文件中的模型，不再输出详细信息
-  
   // 获取最佳可用模型实例
   // 会自动选择配置文件中的模型，不需要指定模型ID
   const modelInstance = getBestAvailableModel();

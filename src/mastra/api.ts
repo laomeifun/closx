@@ -1,4 +1,4 @@
-import { shell } from './agents/index.js';
+import { shell, createShellAgent } from './agents/index.js';
 
 /**
  * 与 Shell Agent 进行对话
@@ -13,6 +13,17 @@ export async function chatWithshell(
   threadId?: string
 ): Promise<string> {
   try {
+    // 确保shell已经初始化
+    if (!shell) {
+      // 等待shell初始化完成
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 如果shell仍然未初始化，则抛出错误
+      if (!shell) {
+        throw new Error('代理尚未初始化完成，请稍后再试');
+      }
+    }
+    
     // 如果没有提供 resourceId 和 threadId，则创建新的
     const actualResourceId = resourceId || `shell-resource-${Date.now()}`;
     const actualThreadId = threadId || `shell-thread-${Date.now()}`;

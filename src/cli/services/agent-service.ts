@@ -1,7 +1,7 @@
 /**
  * AI 代理交互服务
  */
-import { shell } from '../../mastra/agents/index';
+import { shell, createShellAgent } from '../../mastra/agents/index';
 import { ChatMessage } from '../types/terminal-types';
 
 /**
@@ -34,6 +34,17 @@ export class AgentService {
     messages: ChatMessage[], 
     options: AgentRequestOptions
   ): Promise<AgentResponse> {
+    // 确保shell已经初始化
+    if (!shell) {
+      // 等待shell初始化完成
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 如果shell仍然未初始化，则抛出错误
+      if (!shell) {
+        throw new Error('代理尚未初始化完成，请稍后再试');
+      }
+    }
+    
     // 只发送最新的用户消息，利用memory系统已有的历史记录
     const lastUserMessageIndex = [...messages].reverse().findIndex(msg => msg.role === 'user');
     
