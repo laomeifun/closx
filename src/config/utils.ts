@@ -56,10 +56,10 @@ export const getBestAvailableModel = (customModelId?: string, defaultModelName: 
 
 /**
  * 从配置文件加载配置
- * @param configPath 配置文件路径，默认为~/.shellconfig
+ * @param configPath 配置文件路径，默认为~/.closx
  * @returns 配置是否成功加载
  */
-export const loadFromConfigFile = async (configPath: string = '~/.shellconfig'): Promise<boolean> => {
+export const loadFromConfigFile = async (configPath: string = '~/.closx'): Promise<boolean> => {
   try {
     // 处理路径中的~
     const expandedPath = configPath.startsWith('~') 
@@ -98,15 +98,15 @@ export const loadFromConfigFile = async (configPath: string = '~/.shellconfig'):
  */
 export const loadFromAllConfigLocations = async (): Promise<boolean> => {
   const configPaths = [
-    './.shellconfig',                  // 当前目录
-    './.shellconfig.json',             // 当前目录（显式后缀）
-    './src/.shellconfig',              // src目录
-    './src/.shellconfig.json',         // src目录（显式后缀）
-    './src/shellconfig.json',          // src目录（无点前缀）
-    '~/.shellconfig',                  // 用户主目录
-    '~/.shellconfig.json',             // 用户主目录（显式后缀）
-    '~/.config/shellconfig.json',      // 用户配置目录
-    '~/.config/closx/shellconfig.json' // 用户配置目录（应用特定）
+    './.closx',                  // 当前目录
+    './.closx.json',             // 当前目录（显式后缀）
+    './src/.closx',              // src目录
+    './src/.closx.json',         // src目录（显式后缀）
+    './src/closx.json',          // src目录（无点前缀）
+    '~/.closx',                  // 用户主目录
+    '~/.closx.json',             // 用户主目录（显式后缀）
+    '~/.config/closx.json',      // 用户配置目录
+    '~/.config/closx/closx.json' // 用户配置目录（应用特定）
   ];
   
   let configLoaded = false;
@@ -122,10 +122,10 @@ export const loadFromAllConfigLocations = async (): Promise<boolean> => {
 
 /**
  * 创建配置文件模板
- * @param configPath 配置文件路径，默认为~/.shellconfig
+ * @param configPath 配置文件路径，默认为~/.closx
  * @returns 模板是否成功创建
  */
-export const createConfigTemplate = async (configPath: string = '~/.shellconfig'): Promise<boolean> => {
+export const createConfigTemplate = async (configPath: string = '~/.closx'): Promise<boolean> => {
   try {
     // 处理路径中的~
     const expandedPath = configPath.startsWith('~') 
