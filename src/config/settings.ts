@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { AppSettings } from './types';
+import { AppSettings, CommandExecutionMode } from './types';
 import { ALLOW_AUTO_EXECUTION } from './env';
 
 /**
@@ -26,7 +26,8 @@ export class SettingsManager {
       commandBlacklist: [
         'rm -rf', 'sudo', 'chmod 777', 'mkfs',
         'dd if=/dev/zero', 'mv /* /dev/null'
-      ]
+      ],
+      commandExecutionMode: CommandExecutionMode.WHITELIST // 默认使用白名单模式
     };
   }
 
@@ -254,6 +255,62 @@ export class SettingsManager {
   }
 
   /**
+   * 获取命令执行模式
+   * @returns 命令执行模式
+   */
+  public getCommandExecutionMode(): CommandExecutionMode {
+    return this.settings.commandExecutionMode || CommandExecutionMode.WHITELIST;
+  }
+
+  /**
+   * 设置命令执行模式
+   * @param mode 命令执行模式
+   */
+  public setCommandExecutionMode(mode: CommandExecutionMode): void {
+    this.settings = { ...this.settings, commandExecutionMode: mode };
+  }
+
+  /**
+   * 检查命令是否需要确认
+   * @param command 要检查的命令
+   * @returns 是否需要确认，如果为 true 表示需要确认，如果为 false 表示可以自动执行
+   */
+  public shouldConfirmCommand(command: string): boolean {
+    // 获取当前的命令执行模式
+    const mode = this.getCommandExecutionMode();
+    
+    // 如果是消息模式，所有命令都需要确认
+    if (mode === CommandExecutionMode.MESSAGE) {
+      return true;
+    }
+    
+    // 如果是全自动模式，所有命令都不需要确认
+    if (mode === CommandExecutionMode.AUTO) {
+      return false;
+    }
+    
+    const whitelist = this.getCommandWhitelist();
+    const blacklist = this.getCommandBlacklist();
+    
+    // 检查黑名单
+    const isInBlacklist = blacklist.some(blackCmd => command.includes(blackCmd));
+    
+    // 检查白名单
+    const isInWhitelist = whitelist.some(whiteCmd => command.startsWith(whiteCmd));
+    
+    if (mode === CommandExecutionMode.WHITELIST) {
+      // 白名单模式: 如果在白名单中且不在黑名单中，则不需要确认
+      return !isInWhitelist || isInBlacklist;
+    } else if (mode === CommandExecutionMode.BLACKLIST) {
+      // 黑名单模式: 如果在黑名单中，则需要确认
+      return isInBlacklist;
+    }
+    
+    // 默认需要确认
+    return true;
+  }
+
+  /**
    * 检查命令是否允许执行
    * @param command 要检查的命令
    * @returns 是否允许执行
@@ -261,6 +318,11 @@ export class SettingsManager {
   public isCommandAllowed(command: string): boolean {
     // 如果不允许自动执行，直接返回 false
     if (!this.isAutoExecutionAllowed()) {
+      return false;
+    }
+
+    // 如果是消息模式，所有命令都不允许执行
+    if (this.getCommandExecutionMode() === CommandExecutionMode.MESSAGE) {
       return false;
     }
 
@@ -320,4 +382,16 @@ export const getCommandBlacklist = (): string[] => {
 
 export const isCommandAllowed = (command: string): boolean => {
   return settingsManager.isCommandAllowed(command);
+};
+
+export const getCommandExecutionMode = (): CommandExecutionMode => {
+  return settingsManager.getCommandExecutionMode();
+};
+
+export const setCommandExecutionMode = (mode: CommandExecutionMode): void => {
+  settingsManager.setCommandExecutionMode(mode);
+};
+
+export const shouldConfirmCommand = (command: string): boolean => {
+  return settingsManager.shouldConfirmCommand(command);
 };

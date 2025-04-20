@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { ConfigFile } from './types';
+import { ConfigFile, CommandExecutionMode } from './types';
 import { openaiApi } from './model-registry';
 import { getModel, createClient } from './model-registry';
 import { getDefaultModelId } from './settings';
@@ -208,6 +208,8 @@ export const createConfigTemplate = async (configPath: string = '~/.closx'): Pro
         defaultModel: 'openai-custom',  // 默认使用的模型ID
         logLevel: 'info',              // 日志级别
         allowAutoExecution: false,     // 是否允许自动执行命令
+        // 命令执行模式
+        commandExecutionMode: CommandExecutionMode.WHITELIST, // 命令执行模式: whitelist(白名单模式), blacklist(黑名单模式), auto(全自动模式), message(消息模式)
         // 命令执行白名单，允许自动执行的命令
         commandWhitelist: [
           'ls', 'cat', 'echo', 'pwd', 'find', 'grep',

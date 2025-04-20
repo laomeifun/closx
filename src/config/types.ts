@@ -21,6 +21,20 @@ export interface ModelConfig {
 }
 
 /**
+ * 命令执行模式
+ */
+export enum CommandExecutionMode {
+  /** 白名单模式: 白名单内命令自动执行，其他命令询问 */
+  WHITELIST = 'whitelist',
+  /** 黑名单模式: 黑名单内命令询问，其他命令自动执行 */
+  BLACKLIST = 'blacklist',
+  /** 全自动模式: 所有命令都自动执行 */
+  AUTO = 'auto',
+  /** 消息模式: 不执行任何命令，只输出 */
+  MESSAGE = 'message'
+}
+
+/**
  * 应用设置接口
  */
 export interface AppSettings {
@@ -29,6 +43,7 @@ export interface AppSettings {
   readonly allowAutoExecution?: boolean;
   readonly commandWhitelist?: string[];
   readonly commandBlacklist?: string[];
+  readonly commandExecutionMode?: CommandExecutionMode;
 }
 
 /**
