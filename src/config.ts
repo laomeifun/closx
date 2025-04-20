@@ -3,9 +3,8 @@ import { env } from 'process';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { ConfigFile } from './mastra/tools/read-config';
 
-// 环境变量配置
+// Environment variable configuration
 export const OPENAI_API_KEY = env.OPENAI_API_KEY || 'your-api-key';
 export const OPENAI_API_BASE_URL = env.OPENAI_API_BASE_URL || 'https://api.openai.com/v1';
 export const GEMINI_API_KEY = env.GEMINI_API_KEY || 'your-gemini-api-key';
@@ -13,16 +12,16 @@ export const GEMINI_API_BASE_URL = env.GEMINI_API_BASE_URL || 'https://generativ
 export const CLAUDE_API_KEY = env.CLAUDE_API_KEY || 'your-claude-api-key';
 export const CLAUDE_API_BASE_URL = env.CLAUDE_API_BASE_URL || 'https://api.anthropic.com';
 
-// 默认模型名称
+// Default model names
 export const OPENAI_MODEL = env.OPENAI_MODEL || 'gpt-4o';
 export const GEMINI_MODEL = env.GEMINI_MODEL || 'gemini-pro';
 export const CLAUDE_MODEL = env.CLAUDE_MODEL || 'claude-3-opus-20240229';
 
 /**
- * 创建OpenAI格式的API客户端
- * @param apiKey API密钥
- * @param baseURL 基础URL
- * @returns OpenAI客户端
+ * Create an OpenAI format API client
+ * @param apiKey API key
+ * @param baseURL Base URL
+ * @returns OpenAI client
  */
 export const createOpenAIClient = (apiKey: string, baseURL: string): ReturnType<typeof createOpenAI> => {
   return createOpenAI({
@@ -31,19 +30,19 @@ export const createOpenAIClient = (apiKey: string, baseURL: string): ReturnType<
   });
 };
 
-// 默认OpenAI客户端
+// Default OpenAI client
 export const openaiApi = createOpenAI({
   apiKey: OPENAI_API_KEY,
   baseURL: OPENAI_API_BASE_URL
 });
 
 /**
- * 模型提供商类型
+ * Model provider type
  */
 export type ProviderType = 'openai' | 'gemini' | 'claude' | 'custom';
 
 /**
- * 模型配置接口
+ * Model configuration interface
  */
 export interface ModelConfig {
   readonly id: string;
@@ -59,67 +58,67 @@ export interface ModelConfig {
 }
 
 /**
- * 模型配置注册表
+ * Model configuration registry
  */
 export class ModelRegistry {
   private static instance: ModelRegistry;
   private models: Map<string, ModelConfig>;
 
   /**
-   * 私有构造函数
+   * Private constructor
    */
   private constructor() {
     this.models = new Map<string, ModelConfig>();
-    // 注意：加载配置文件的操作移到了getInstance方法中异步执行
+    // Note: Loading configuration files has been moved to the getInstance method for asynchronous execution
   }
 
   /**
-   * 获取单例实例
+   * Get singleton instance
    */
   public static getInstance(): ModelRegistry {
     if (!ModelRegistry.instance) {
       ModelRegistry.instance = new ModelRegistry();
-      // 异步加载配置，不阻塞实例创建
+      // Asynchronously load configuration without blocking instance creation
       ModelRegistry.instance.loadDefaultModels().catch(error => {
-        console.error('加载默认模型失败:', error);
+        console.error('Failed to load default models:', error);
       });
     }
     return ModelRegistry.instance;
   }
 
   /**
-   * 加载默认模型
+   * Load default models
    */
   private async loadDefaultModels(): Promise<void> {
-    // 尝试从多个位置加载配置文件
+    // Try to load configuration files from multiple locations
     const configPaths = [
-      './.shellconfig',                  // 当前目录
-      './.shellconfig.json',             // 当前目录（显式后缀）
-      './src/.shellconfig',              // src目录
-      './src/.shellconfig.json',         // src目录（显式后缀）
-      './src/shellconfig.json',          // src目录（无点前缀）
-      '~/.shellconfig',                  // 用户主目录
-      '~/.shellconfig.json',             // 用户主目录（显式后缀）
-      '~/.config/shellconfig.json',      // 用户配置目录
-      '~/.config/closx/shellconfig.json' // 用户配置目录（应用特定）
+      './.shellconfig',                  // Current directory
+      './.shellconfig.json',             // Current directory (explicit suffix)
+      './src/.shellconfig',              // src directory
+      './src/.shellconfig.json',         // src directory (explicit suffix)
+      './src/shellconfig.json',          // src directory (no dot prefix)
+      '~/.shellconfig',                  // User home directory
+      '~/.shellconfig.json',             // User home directory (explicit suffix)
+      '~/.config/shellconfig.json',      // User config directory
+      '~/.config/closx/shellconfig.json' // User config directory (application specific)
     ];
     
-    // 尝试加载每个配置文件
+    // Try to load each configuration file
     let configLoaded = false;
     for (const configPath of configPaths) {
       const result = await this.loadFromConfigFile(configPath);
       if (result) {
-        // 成功加载配置
+        // Successfully loaded configuration
         configLoaded = true;
-        // 不中断，继续加载其他配置文件，允许配置合并
+        // Don't break, continue loading other configuration files, allow configuration merging
       }
     }
     
     if (!configLoaded) {
-      console.log('未找到配置文件，使用环境变量配置');
+      console.log('No configuration file found, using environment variable configuration');
     }
     
-    // 添加默认OpenAI模型（如果环境变量存在）
+    // Add default OpenAI model (if environment variable exists)
     if (env.OPENAI_API_KEY) {
       this.registerModel({
         id: 'openai-default',
@@ -131,7 +130,7 @@ export class ModelRegistry {
       });
     }
 
-    // 添加默认Gemini模型（如果环境变量存在）
+    // Add default Gemini model (if environment variable exists)
     if (env.GEMINI_API_KEY) {
       this.registerModel({
         id: 'gemini-default',
@@ -143,7 +142,7 @@ export class ModelRegistry {
       });
     }
 
-    // 添加默认Claude模型（如果环境变量存在）
+    // Add default Claude model (if environment variable exists)
     if (env.CLAUDE_API_KEY) {
       this.registerModel({
         id: 'claude-default',
@@ -157,9 +156,9 @@ export class ModelRegistry {
   }
   
   /**
-   * 从配置文件加载模型配置
-   * @param configPath 配置文件路径，默认为~/.shellconfig
-   * @returns 是否成功加载配置
+   * Load model configuration from configuration file
+   * @param configPath Configuration file path, defaults to ~/.shellconfig
+   * @returns Whether the configuration was successfully loaded
    */
   public async loadFromConfigFile(configPath: string = '~/.shellconfig'): Promise<boolean> {
     try {
@@ -172,18 +171,18 @@ export class ModelRegistry {
       try {
         await fs.access(expandedPath);
       } catch (error) {
-        // 尝试从配置文件加载
+        // Try to load from configuration file
         return false;
       }
       
-      // 读取文件内容
+      // Read file content
       const content = await fs.readFile(expandedPath, 'utf-8');
       
-      // 解析JSON
+      // Parse JSON
       try {
         const config = JSON.parse(content);
         
-        // 如果有models配置，则注册模型
+        // If there is a models configuration, register the models
         if (config.models && typeof config.models === 'object') {
           let modelsLoaded = 0;
           
@@ -199,7 +198,7 @@ export class ModelRegistry {
             ) {
               const provider = String(modelConfig.provider);
               
-              // 检查provider是否有效
+              // Check if provider is valid
               if (!['openai', 'gemini', 'claude', 'custom'].includes(provider)) {
                 // 模型provider无效
                 return;
@@ -391,10 +390,10 @@ export class ModelRegistry {
   }
 }
 
-// 导出单例实例
+// Export singleton instance
 export const modelRegistry = ModelRegistry.getInstance();
 
-// 便捷函数
+// Convenience functions
 export const registerCustomOpenAI = (id: string, name: string, apiKey: string, baseURL: string, model: string, additionalParams?: Record<string, unknown>): void => {
   modelRegistry.registerCustomOpenAI(id, name, apiKey, baseURL, model, additionalParams);
 };
@@ -416,85 +415,85 @@ export const createClient = (id: string): ReturnType<typeof createOpenAI> | null
 };
 
 /**
- * 获取最佳可用模型客户端
- * 优先级：
- * 1. 配置文件中指定的默认模型（settings.defaultModel）
- * 2. 指定的模型ID（参数传入）
- * 3. 配置文件中的第一个模型
- * 4. 环境变量中的默认OpenAI模型
- * 5. 默认的openaiApi
- * @param customModelId 指定的模型ID（可选）
- * @param defaultModelName 默认模型名称，如果没有指定模型则使用该名称
- * @returns 模型实例
+ * Get the best available model client
+ * Priority:
+ * 1. Default model specified in the configuration file (settings.defaultModel)
+ * 2. Specified model ID (passed as parameter)
+ * 3. First model in the configuration file
+ * 4. Default OpenAI model from environment variables
+ * 5. Default openaiApi
+ * @param customModelId Specified model ID (optional)
+ * @param defaultModelName Default model name, used if no model is specified
+ * @returns Model instance
  */
 export const getBestAvailableModel = (customModelId?: string, defaultModelName: string = "gpt-4o") => {
-  // 尝试获取模型
+  // Try to get model
   
-  // 获取所有模型
+  // Get all models
   const allModels = modelRegistry.getAllModels();
-  // 已加载模型配置
+  // Loaded model configurations
   
-  // 1. 检查配置文件中是否有指定的默认模型
-  // 注意：这里我们需要实现一个获取settings的方法，暂时略过
+  // 1. Check if there is a default model specified in the configuration file
+  // Note: We need to implement a method to get settings, temporarily omitted
   
-  // 2. 如果指定了模型ID，尝试使用该模型
+  // 2. If a model ID is specified, try to use that model
   if (customModelId) {
     const customClient = createClient(customModelId);
     const model = getModel(customModelId);
     if (customClient && model) {
-      // 使用指定模型
+      // Use specified model
       return customClient(model.model || defaultModelName);
     }
   }
   
-  // 3. 如果有配置文件中的模型，使用第一个模型
+  // 3. If there are models in the configuration file, use the first one
   if (allModels.length > 0) {
     const firstModel = allModels[0];
     const firstModelClient = createClient(firstModel.id);
     if (firstModelClient) {
-      // 使用配置文件中的第一个模型
+      // Use the first model in the configuration file
       return firstModelClient(firstModel.model || defaultModelName);
     }
   }
   
-  // 4. 尝试使用环境变量中的默认OpenAI模型
+  // 4. Try to use the default OpenAI model from environment variables
   const defaultClient = createClient("openai-default");
   const defaultModel = getModel("openai-default");
   if (defaultClient && defaultModel) {
-    // 使用环境变量中的默认OpenAI模型
+    // Use the default OpenAI model from environment variables
     return defaultClient(defaultModel.model || defaultModelName);
   }
   
-  // 5. 如果没有配置的模型，使用默认的openaiApi
-  // 使用默认的openaiApi
+  // 5. If no model is specified, use the default openaiApi
+  // Use the default openaiApi
   return openaiApi(defaultModelName);
 };
 
 /**
- * 从配置文件加载模型配置
- * @param configPath 配置文件路径，默认为~/.shellconfig
- * @returns 是否成功加载配置
+ * Load model configuration from configuration file
+ * @param configPath Configuration file path, defaults to ~/.shellconfig
+ * @returns Whether the configuration was successfully loaded
  */
 export const loadFromConfigFile = async (configPath: string = '~/.shellconfig'): Promise<boolean> => {
   return modelRegistry.loadFromConfigFile(configPath);
 };
 
 /**
- * 从多个位置加载配置文件
- * 会尝试从当前目录、src目录、用户主目录等位置加载配置
- * @returns 是否成功加载任何配置
+ * Load configuration files from multiple locations
+ * Will try to load configuration from current directory, src directory, user home directory, etc.
+ * @returns Whether any configuration was successfully loaded
  */
 export const loadFromAllConfigLocations = async (): Promise<boolean> => {
   const configPaths = [
-    './.shellconfig',                  // 当前目录
-    './.shellconfig.json',             // 当前目录（显式后缀）
-    './src/.shellconfig',              // src目录
-    './src/.shellconfig.json',         // src目录（显式后缀）
-    './src/shellconfig.json',          // src目录（无点前缀）
-    '~/.shellconfig',                  // 用户主目录
-    '~/.shellconfig.json',             // 用户主目录（显式后缀）
-    '~/.config/shellconfig.json',      // 用户配置目录
-    '~/.config/closx/shellconfig.json' // 用户配置目录（应用特定）
+    './.shellconfig',                  // Current directory
+    './.shellconfig.json',             // Current directory (explicit suffix)
+    './src/.shellconfig',              // src directory
+    './src/.shellconfig.json',         // src directory (explicit suffix)
+    './src/shellconfig.json',          // src directory (no dot prefix)
+    '~/.shellconfig',                  // User home directory
+    '~/.shellconfig.json',             // User home directory (explicit suffix)
+    '~/.config/shellconfig.json',      // User configuration directory
+    '~/.config/closx/shellconfig.json' // User configuration directory (application specific)
   ];
   
   let configLoaded = false;
@@ -509,13 +508,13 @@ export const loadFromAllConfigLocations = async (): Promise<boolean> => {
 };
 
 /**
- * 创建配置文件模板
- * @param configPath 配置文件路径，默认为~/.shellconfig
- * @returns 是否成功创建模板
+ * Create configuration file template
+ * @param configPath Configuration file path, defaults to ~/.shellconfig
+ * @returns Whether the template was successfully created
  */
 export const createConfigTemplate = async (configPath: string = '~/.shellconfig'): Promise<boolean> => {
   try {
-    // 处理路径中的~
+    // Handle ~ in path
     const expandedPath = configPath.startsWith('~') 
       ? path.join(os.homedir(), configPath.slice(1)) 
       : configPath;
@@ -608,7 +607,7 @@ export const createConfigTemplate = async (configPath: string = '~/.shellconfig'
   }
 };
 
-// 默认导出
+// Default export
 export default {
   openaiApi,
   createOpenAIClient,
