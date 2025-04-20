@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { ConfigFile, CommandExecutionMode } from './types';
+import { ConfigFile, ModelConfig } from './types';
 import { openaiApi } from './model-registry';
 import { getModel, createClient } from './model-registry';
 import { getDefaultModelId } from './settings';
@@ -18,39 +18,79 @@ import { getDefaultModelId } from './settings';
  * @returns 模型实例
  */
 export const getBestAvailableModel = (customModelId?: string, defaultModelName: string = "gpt-4o") => {
-  // 尝试获取模型
-  
-  // 1. 检查配置文件中是否指定了默认模型
-  const defaultModelId = getDefaultModelId();
-  if (defaultModelId) {
-    const defaultClient = createClient(defaultModelId);
-    const defaultModel = getModel(defaultModelId);
-    if (defaultClient && defaultModel) {
-      // 使用配置文件中指定的默认模型
-      return defaultClient(defaultModel.model || defaultModelName);
+  // Remove logging variables
+  // let selectedModelId: string | undefined = undefined;
+  // let modelInstance: any = null;
+  // let modelConfig: ModelConfig | undefined = undefined;
+
+  // 1. Check default model from settings
+  const configDefaultModelId = getDefaultModelId();
+  if (!customModelId && configDefaultModelId) {
+    // Remove log
+    // console.log(`[DEBUG] getBestAvailableModel: Trying default model from settings: ${configDefaultModelId}`);
+    const modelConfig = getModel(configDefaultModelId);
+    if (modelConfig) {
+      const modelInstance = createClient(configDefaultModelId);
+      if (modelInstance) {
+          // Remove logs
+          // console.log(`[DEBUG] getBestAvailableModel: Using default model: ${configDefaultModelId}`);
+          // console.log(`[DEBUG] Model Config for ${configDefaultModelId}: ${JSON.stringify(modelConfig, null, 2)}`);
+          return modelInstance(modelConfig.model || defaultModelName);
+      } else {
+          // Remove log
+          // console.log(`[DEBUG] getBestAvailableModel: Failed to create client for default model: ${configDefaultModelId}`);
+      }
+    } else {
+        // Remove log
+        // console.log(`[DEBUG] getBestAvailableModel: Default model config not found for ID: ${configDefaultModelId}`);
     }
   }
-  
-  // 2. 如果指定了模型ID，尝试使用该模型
+
+  // 2. Check custom model ID if provided
   if (customModelId) {
-    const customClient = createClient(customModelId);
-    const model = getModel(customModelId);
-    if (customClient && model) {
-      // 使用指定的模型
-      return customClient(model.model || defaultModelName);
+    // Remove log
+    // console.log(`[DEBUG] getBestAvailableModel: Trying custom model ID: ${customModelId}`);
+    const modelConfig = getModel(customModelId);
+    if (modelConfig) {
+      const modelInstance = createClient(customModelId);
+      if (modelInstance) {
+          // Remove logs
+          // console.log(`[DEBUG] getBestAvailableModel: Using custom model: ${customModelId}`);
+          // console.log(`[DEBUG] Model Config for ${customModelId}: ${JSON.stringify(modelConfig, null, 2)}`);
+          return modelInstance(modelConfig.model || defaultModelName);
+      } else {
+          // Remove log
+          // console.log(`[DEBUG] getBestAvailableModel: Failed to create client for custom model: ${customModelId}`);
+      }
+    } else {
+        // Remove log
+        // console.log(`[DEBUG] getBestAvailableModel: Custom model config not found for ID: ${customModelId}`);
     }
   }
-  
-  // 3. 尝试使用环境变量中的默认OpenAI模型
-  const envDefaultClient = createClient("openai-default");
-  const envDefaultModel = getModel("openai-default");
-  if (envDefaultClient && envDefaultModel) {
-    // 使用环境变量中的默认OpenAI模型
-    return envDefaultClient(envDefaultModel.model || defaultModelName);
-  }
-  
-  // 4. 如果未指定模型，使用默认openaiApi
-  // 使用默认openaiApi
+
+  // 3. Check environment default OpenAI model
+  // Remove log
+  // console.log('[DEBUG] getBestAvailableModel: Trying environment default OpenAI model: openai-default');
+  const modelConfig = getModel("openai-default");
+  if (modelConfig) {
+    const modelInstance = createClient("openai-default");
+    if (modelInstance) {
+        // Remove logs
+        // console.log(`[DEBUG] getBestAvailableModel: Using environment default OpenAI: openai-default`);
+        // console.log(`[DEBUG] Model Config for openai-default: ${JSON.stringify(modelConfig, null, 2)}`);
+        return modelInstance(modelConfig.model || defaultModelName);
+    } else {
+        // Remove log
+        // console.log(`[DEBUG] getBestAvailableModel: Failed to create client for environment default OpenAI`);
+    }
+   } else {
+       // Remove log
+       // console.log(`[DEBUG] getBestAvailableModel: Environment default OpenAI config not found.`);
+   }
+
+  // 4. Fallback to default openaiApi
+  // Remove log
+  // console.log(`[DEBUG] getBestAvailableModel: Falling back to default openaiApi with model: ${defaultModelName}`);
   return openaiApi(defaultModelName);
 };
 
@@ -208,8 +248,6 @@ export const createConfigTemplate = async (configPath: string = '~/.closx'): Pro
         defaultModel: 'openai-custom',  // 默认使用的模型ID
         logLevel: 'info',              // 日志级别
         allowAutoExecution: false,     // 是否允许自动执行命令
-        // 命令执行模式
-        commandExecutionMode: CommandExecutionMode.WHITELIST, // 命令执行模式: whitelist(白名单模式), blacklist(黑名单模式), auto(全自动模式), message(消息模式)
         // 命令执行白名单，允许自动执行的命令
         commandWhitelist: [
           'ls', 'cat', 'echo', 'pwd', 'find', 'grep',

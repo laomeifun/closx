@@ -31,38 +31,71 @@ export class AgentService {
    * @returns Agent response
    */
   public async streamResponse(
-    messages: ChatMessage[], 
+    messages: ChatMessage[],
     options: AgentRequestOptions
   ): Promise<AgentResponse> {
     // Ensure shell is initialized
     if (!shell) {
-      // Wait for shell initialization to complete
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // If shell is still not initialized, throw error
       if (!shell) {
         throw new Error('Agent not yet initialized, please try again later');
       }
     }
-    
-    // Only send the latest user message, using the existing history from memory system
+
+    // Determine messages to send
     const lastUserMessageIndex = [...messages].reverse().findIndex(msg => msg.role === 'user');
-    
+    let messagesToSend: ChatMessage[];
     if (lastUserMessageIndex !== -1) {
-      const lastMessages = [
-        // Include the latest system message (if any)
-        ...messages.filter((msg, index) => 
+      messagesToSend = [
+        ...messages.filter((msg, index) =>
           msg.role === 'system' && index > messages.length - lastUserMessageIndex - 2
         ),
-        // Latest user message
         messages[messages.length - lastUserMessageIndex - 1]
       ];
-      
-      return shell.stream(lastMessages, options);
+    } else {
+      messagesToSend = messages;
     }
-    
-    // If no user message found, send all messages (prevent errors)
-    return shell.stream(messages, options);
+
+    return shell.stream(messagesToSend, options);
+  }
+  
+  /**
+   * Send messages to AI agent and receive non-streaming response
+   * @param messages - Conversation history messages
+   * @param options - Request options
+   * @returns Agent response text
+   */
+  public async generateResponse(
+    messages: ChatMessage[],
+    options: AgentRequestOptions
+  ): Promise<string> {
+    if (!shell) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!shell) {
+        throw new Error('Agent not yet initialized, please try again later');
+      }
+    }
+
+    const lastUserMessageIndex = [...messages].reverse().findIndex(msg => msg.role === 'user');
+    let messagesToSend: ChatMessage[];
+    if (lastUserMessageIndex !== -1) {
+      messagesToSend = [
+        ...messages.filter((msg, index) =>
+          msg.role === 'system' && index > messages.length - lastUserMessageIndex - 2
+        ),
+        messages[messages.length - lastUserMessageIndex - 1]
+      ];
+    } else {
+      messagesToSend = messages;
+    }
+
+    try {
+      const response = await shell.generate(messagesToSend, options);
+      return response?.text ?? '';
+    } catch (error: any) {
+      console.error(`Error calling shell.generate: ${error.message}`);
+      return ''; // Return empty string on error
+    }
   }
   
   /**

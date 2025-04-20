@@ -91,45 +91,35 @@ export class ResponseProcessor {
   /**
    * Process shell commands and return execution results
    * @param responseText - Raw response text
-   * @param options - Terminal agent options
    * @returns Command execution results
    */
   public async processShellCommands(
-    responseText: string, 
-    options: {
-      executeCommands: boolean;
-      interactive: boolean;
-      interactiveCommand?: boolean;
-      blacklistCheck?: boolean; // 添加黑名单检查参数
-    }
-  ): Promise<{command: string; output: string; exitCode?: number}[]> {
+    responseText: string
+  ): Promise<string[]> {
     return this.shellTagProcessor.processShellTags(
-      responseText, 
-      this.sessionService.getCurrentDir(), 
-      options
+      responseText
     );
   }
 
   /**
    * Build command execution results message
-   * @param commandResults - Command execution results
+   * NOTE: This method might need adjustment as commandResults are now just strings, not objects with output/exitCode.
+   * @param commandResults - Array of command strings extracted from <shell> tags.
    * @param verbose - Whether to show detailed information
    * @returns Formatted command results message
    */
   public buildCommandResultsMessage(
-    commandResults: {command: string; output: string; exitCode?: number}[],
+    commandResults: string[],
     verbose = false
   ): string {
     let commandResultsMessage = '';
     
     for (const result of commandResults) {
-      // Record command execution process and results
-      const executionProcess = verbose ? 
-        `Execution process:\nCommand executed in directory ${this.sessionService.getCurrentDir()}\nExit code: ${result.exitCode}\n` : 
+      const executionProcess = verbose ?
+        `Note: Command found in <shell> tag in directory ${this.sessionService.getCurrentDir()}. Agent should execute via tool.` :
         '';
 
-      // Use the specified prompt variable format, inject execution process and results
-      commandResultsMessage += `Executed command<shell>${result.command}</shell>\n${executionProcess}Here are the results:\n${result.output}\n\n`;
+      commandResultsMessage += `Command identified: <shell>${result}</shell>\n${executionProcess}\n`;
     }
     
     return commandResultsMessage;

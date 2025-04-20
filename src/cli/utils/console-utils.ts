@@ -9,11 +9,25 @@ import ora, { Ora } from 'ora';
  */
 export class ConsoleUtils {
   /**
-   * Display AI thinking animation
+   * Display AI thinking animation with temporary message option
+   * @param isTemporary - If true, the spinner will be replaced with empty text after a delay
+   * @param tempDuration - Duration in ms before clearing spinner text (if temporary)
    * @returns Loading animation instance
    */
-  public static showThinkingSpinner(): Ora {
-    return ora('🤔 AI thinking...').start();
+  public static showThinkingSpinner(isTemporary: boolean = false, tempDuration: number = 2000): Ora {
+    // Use shorter text to avoid blocking subsequent input
+    const spinner = ora('AI processing...').start();
+    
+    // If temporary, clear the text after specified duration
+    if (isTemporary) {
+      setTimeout(() => {
+        if (spinner.isSpinning) {
+          spinner.text = '';
+        }
+      }, tempDuration);
+    }
+    
+    return spinner;
   }
   
   /**
@@ -22,7 +36,7 @@ export class ConsoleUtils {
    * @returns Loading animation instance
    */
   public static showCommandSpinner(command: string): Ora {
-    return ora(`⚙️ Executing command: ${command}`).start();
+    return ora(`Running: ${command}`).start();
   }
   
   /**
@@ -31,7 +45,7 @@ export class ConsoleUtils {
    * @returns Formatted command string
    */
   public static formatCommand(command: string): string {
-    return chalk.green(`Executing: ${command}`);
+    return `\x1b[36mExecuting: ${command}\x1b[0m`;
   }
   
   /**
@@ -55,7 +69,7 @@ export class ConsoleUtils {
    * @param message - Warning message
    */
   public static showWarning(message: string): void {
-    console.log(chalk.yellow(`⚠️ ${message}`));
+    console.log(`\n⚠️  WARNING: ${message}\n`);
   }
   
   /**
@@ -86,4 +100,4 @@ export class ConsoleUtils {
     console.log(chalk.yellow('🌐 /env') + ' - Show current environment information');
     console.log('\n');
   }
-}
+} 

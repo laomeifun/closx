@@ -16,7 +16,6 @@ export const createShellAgent = async () => {
   
   // Get all models
   const allModels = config.modelRegistry.getAllModels();
-  // Loaded model configurations
   
   // Get the best available model instance
   // Will automatically select the model from configuration file, no need to specify model ID
@@ -42,6 +41,7 @@ createShellAgent().then(agent => {
 }).catch(error => {
   // Shell agent initialization failed
   // Create a default Agent as fallback
+  console.error('Failed to initialize shell agent:', error);
   shell = new Agent({
     name: "Shell",
     instructions: shellPrompt,

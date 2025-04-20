@@ -3,16 +3,19 @@
  */
 import { ChatMessage } from '../types/terminal-types';
 import { ConsoleUtils } from '../utils/console-utils';
-import { ShellExecutor } from '../utils/shell-executor';
+// Removed import for the deleted shell-executor
+// import { ShellExecutor } from '../utils/shell-executor';
 
 /**
  * Special Command Handler
  */
 export class SpecialCommandHandler {
-  private readonly shellExecutor: ShellExecutor;
+  // Removed shellExecutor property
+  // private readonly shellExecutor: ShellExecutor;
 
   constructor() {
-    this.shellExecutor = new ShellExecutor();
+    // Removed instantiation of ShellExecutor
+    // this.shellExecutor = new ShellExecutor();
   }
 
   /**
@@ -23,8 +26,8 @@ export class SpecialCommandHandler {
    * @returns Whether the command was handled
    */
   public async handle(
-    command: string, 
-    currentDir: string,
+    command: string,
+    currentDir: string, // Kept currentDir in signature for potential future use, though unused now
     messages: ChatMessage[]
   ): Promise<boolean> {
     const cmd = command.trim().toLowerCase();
@@ -39,13 +42,11 @@ export class SpecialCommandHandler {
     if (cmd === '/quit') {
       ConsoleUtils.showInfo('Goodbye!');
       process.exit(0);
+      // No return needed after process.exit(0)
     }
 
-    // Execute shell command
-    if (cmd.startsWith('/exec ')) {
-      await this.handleExecCommand(cmd.substring(6).trim(), currentDir);
-      return true;
-    }
+    // --- Removed /exec command handling --- 
+    // if (cmd.startsWith('/exec ')) { ... }
 
     // Clear conversation history
     if (cmd === '/clear') {
@@ -56,49 +57,18 @@ export class SpecialCommandHandler {
       return true;
     }
 
-    // Display environment information
-    if (cmd === '/env') {
-      await this.handleEnvCommand(currentDir);
-      return true;
-    }
+    // --- Removed /env command handling --- 
+    // if (cmd === '/env') { ... }
 
-    return false;
+    // If command was not handled, indicate it
+    ConsoleUtils.showWarning(`Unknown special command: ${command}`);
+    ConsoleUtils.showInfo('Type /help for available commands.');
+    return false; // Return false as the command was not recognized/handled
   }
 
-  /**
-   * Handle /exec command
-   * @param shellCmd - Shell command
-   * @param currentDir - Current working directory
-   */
-  private async handleExecCommand(shellCmd: string, currentDir: string): Promise<void> {
-    try {
-      const result = await this.shellExecutor.execute(shellCmd, currentDir);
-      
-      if (result.stdout) {
-        ConsoleUtils.showInfo('Output:');
-        console.log(result.stdout);
-      }
-      
-      if (result.stderr) {
-        ConsoleUtils.showError('Error:');
-        console.log(result.stderr);
-      }
-    } catch (error: unknown) {
-      ConsoleUtils.showError('Failed to execute command:', error as Error);
-    }
-  }
+  // --- Removed handleExecCommand method --- 
+  // private async handleExecCommand(...) { ... }
 
-  /**
-   * Handle /env command
-   * @param currentDir - Current working directory
-   */
-  private async handleEnvCommand(currentDir: string): Promise<void> {
-    try {
-      const result = await this.shellExecutor.execute('printenv', currentDir);
-      ConsoleUtils.showInfo('Environment variables:');
-      console.log(result.stdout);
-    } catch (error: unknown) {
-      ConsoleUtils.showError('Failed to get environment variables:', error as Error);
-    }
-  }
+  // --- Removed handleEnvCommand method --- 
+  // private async handleEnvCommand(...) { ... }
 }

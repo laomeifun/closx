@@ -21,7 +21,7 @@ export interface ModelConfig {
 }
 
 /**
- * 命令执行模式
+ * 命令执行模式 (Re-added)
  */
 export enum CommandExecutionMode {
   /** 白名单模式: 白名单内命令自动执行，其他命令询问 */

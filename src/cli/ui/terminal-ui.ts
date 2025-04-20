@@ -56,10 +56,16 @@ export class TerminalUI {
 
   /**
    * Display thinking animation
-   * @returns Animation controller
+   * @returns Animation controller with stop() method
    */
   public showThinkingAnimation() {
-    return ConsoleUtils.showThinkingSpinner();
+    // 不显示任何加载动画，返回一个具有stop方法的空对象
+    return {
+      stop: () => {},
+      fail: (text?: string) => {},
+      succeed: (text?: string) => {},
+      isSpinning: false
+    };
   }
 
   /**
@@ -85,4 +91,4 @@ export class TerminalUI {
     console.log('  closx "Show files in current directory"  - Execute a single command');
     console.log(chalk.cyan('=====================\n'));
   }
-}
+} 

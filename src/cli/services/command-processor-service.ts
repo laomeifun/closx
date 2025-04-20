@@ -52,15 +52,15 @@ export class CommandProcessorService {
   /**
    * Process agent responses
    * @param options - Terminal agent options
-   * @returns Whether further command result processing is needed
+   * @returns Boolean indicating if further processing *related to tool calls* might be needed (always false for <shell> tags).
    */
   public async processAgentResponse(options: TerminalAgentOptions = {}): Promise<boolean> {
     // Show loading animation
     const spinner = this.terminalUI.showThinkingAnimation();
 
     try {
-      // Get agent response
-      const response = await this.agentService.streamResponse(
+      // Get agent response (non-streaming for testing)
+      const responseText = await this.agentService.generateResponse(
         [...this.sessionService.getMessages()], // Convert to mutable array
         {
           resourceId: this.sessionService.getResourceId(),
@@ -70,47 +70,23 @@ export class CommandProcessorService {
 
       spinner.stop();
 
-      // Collect complete response
-      let responseText = '';
-      for await (const chunk of response.textStream) {
-        responseText += chunk;
-      }
-      
-      // Process response content
+      // Process response content for display
       const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
-      
+
       // Display processed content
       this.terminalUI.displayAIResponse(processedResponse.displayText);
 
-      // Add assistant message (using original complete response)
+      // Add assistant message (using original complete response) to history
       this.sessionService.addAssistantMessage(responseText);
 
-      // Process <shell> tags and get command execution results
-      const commandResults = await this.responseProcessor.processShellCommands(
-        responseText, 
-        { 
-          executeCommands: true,
-          interactive: true, // Enable interactive confirmation
-          interactiveCommand: true, // Enable interactive command execution
-          blacklistCheck: true // 启用黑名单检查
-        }
+      // Process <shell> tags just to *log* them if found (doesn't execute)
+      // The returned command strings are ignored here as we don't act on them.
+      await this.responseProcessor.processShellCommands(
+        responseText
       );
-      
-      // If there are command execution results, send them to the agent
-      if (commandResults.length > 0) {
-        // Build command results message
-        const commandResultsMessage = this.responseProcessor.buildCommandResultsMessage(
-          commandResults, 
-          options.verbose
-        );
-        
-        // Add command results to message history
-        this.sessionService.addUserMessage(commandResultsMessage);
-        
-        // Need to continue processing command results
-        return true;
-      }
 
+      // Always return false as we no longer loop based on <shell> tag processing.
+      // Further processing loop might be triggered by actual tool call results, handled elsewhere.
       return false;
     } catch (error) {
       spinner.fail('Error occurred');
@@ -121,8 +97,11 @@ export class CommandProcessorService {
 
   /**
    * Process command execution results and get agent response
+   * NOTE: This method's original purpose was tied to <shell> tag execution.
+   * It might be redundant or need refactoring depending on how tool call results are handled.
+   * Keep simplified version for now.
    * @param options - Terminal agent options
-   * @returns Whether further command result processing is needed
+   * @returns Boolean indicating if further processing is needed (always false for <shell> tags).
    */
   public async processCommandResults(options: TerminalAgentOptions = {}): Promise<boolean> {
     try {
@@ -140,40 +119,22 @@ export class CommandProcessorService {
       for await (const chunk of response.textStream) {
         responseText += chunk;
       }
-      
-      // Process response content
+
+      // Process response content for display
       const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
-      
+
       // Display processed content
       this.terminalUI.displayAIResponse(processedResponse.displayText);
 
-      // Add assistant message (using original complete response)
+      // Add assistant message (using original complete response) to history
       this.sessionService.addAssistantMessage(responseText);
 
-      // Process <shell> tags and get command list (don't execute commands)
-      const commandResults = await this.responseProcessor.processShellCommands(
-        responseText, 
-        { 
-          executeCommands: false,
-          interactive: false, // No need for interactive confirmation in recursive processing
-          blacklistCheck: true // 启用黑名单检查
-        }
+      // Process <shell> tags just to log them if found (doesn't execute)
+      await this.responseProcessor.processShellCommands(
+        responseText
       );
-      
-      // If there are commands, send them to the agent (recursive processing)
-      if (commandResults.length > 0) {
-        // Build command results message
-        const commandResultsMessage = this.responseProcessor.buildCommandResultsMessage(
-          commandResults
-        );
-        
-        // Add command results to message history
-        this.sessionService.addUserMessage(commandResultsMessage);
-        
-        // Need to continue processing command results
-        return true;
-      }
 
+      // Always return false as we no longer loop based on <shell> tag processing.
       return false;
     } catch (error) {
       this.terminalUI.showError('Error processing command results:', error as Error);
@@ -182,7 +143,7 @@ export class CommandProcessorService {
   }
 
   /**
-   * Execute a single command
+   * Execute a single command (initial user input)
    * @param command - Command to execute
    * @param options - Terminal agent options
    */
@@ -194,15 +155,19 @@ export class CommandProcessorService {
     this.sessionService.addUserMessage(command);
 
     try {
+      // Call processAgentResponse once. It now returns false regarding <shell> looping.
       let needsProcessing = await this.processAgentResponse(options);
-      
-      // Process command results in a loop until no longer needed
+
+      // This loop might become redundant or only run if processAgentResponse/processCommandResults
+      // were changed to return true for other reasons (e.g., specific tool call patterns requiring follow-up).
+      // As per current logic focusing on removing <shell> loop, it won't loop based on <shell> tags.
       while (needsProcessing) {
+        // processCommandResults also returns false regarding <shell> looping.
         needsProcessing = await this.processCommandResults(options);
       }
     } catch (error) {
       this.terminalUI.showError('Command execution failed:', error as Error);
-      throw error;
+      throw error; // Re-throw to be caught by the caller in index.ts or terminal-agent.ts
     }
   }
 }

@@ -3,7 +3,8 @@ import { TerminalAgent } from './terminal-agent.js';
 
 // Export components for use in other modules
 export * from './types/terminal-types';
-export * from './utils/shell-executor';
+// Remove export for the deleted file
+// export * from './utils/shell-executor';
 export * from './utils/prompt-generator';
 export * from './utils/console-utils';
 export * from './handlers/special-commands';
