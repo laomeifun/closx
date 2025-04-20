@@ -41,15 +41,15 @@ export class SettingsManager {
   private async loadSettings(): Promise<void> {
     // 尝试从多个位置加载配置文件
     const configPaths = [
-      './.shellconfig',                  // 当前目录
-      './.shellconfig.json',             // 当前目录（显式后缀）
-      './src/.shellconfig',              // src目录
-      './src/.shellconfig.json',         // src目录（显式后缀）
-      './src/shellconfig.json',          // src目录（无点前缀）
-      '~/.shellconfig',                  // 用户主目录
-      '~/.shellconfig.json',             // 用户主目录（显式后缀）
-      '~/.config/shellconfig.json',      // 用户配置目录
-      '~/.config/closx/shellconfig.json' // 用户配置目录（应用特定）
+      './.closx',                  // 当前目录
+      './.closx.json',             // 当前目录（显式后缀）
+      './src/.closx',              // src目录
+      './src/.closx.json',         // src目录（显式后缀）
+      './src/closx.json',          // src目录（无点前缀）
+      '~/.closx',                  // 用户主目录
+      '~/.closx.json',             // 用户主目录（显式后缀）
+      '~/.config/closx.json',      // 用户配置目录
+      '~/.config/closx/closx.json' // 用户配置目录（应用特定）
     ];
     
     // 尝试加载每个配置文件
@@ -64,10 +64,10 @@ export class SettingsManager {
   
   /**
    * 从配置文件加载设置
-   * @param configPath 配置文件路径，默认为~/.shellconfig
+   * @param configPath 配置文件路径，默认为~/.closx
    * @returns 配置是否成功加载
    */
-  public async loadFromConfigFile(configPath: string = '~/.shellconfig'): Promise<boolean> {
+  public async loadFromConfigFile(configPath: string = '~/.closx'): Promise<boolean> {
     try {
       // 处理路径中的~
       const expandedPath = configPath.startsWith('~') 

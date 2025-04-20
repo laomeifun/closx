@@ -1,6 +1,9 @@
-import { Memory } from '@mastra/memory';
-import { Agent } from '@mastra/core/agent';
-
+import { Memory } from "@mastra/memory";
+import { Agent } from "@mastra/core/agent";
+import { LibSQLStore } from "@mastra/core/storage/libsql";
+import { LibSQLVector } from "@mastra/core/vector/libsql";
+import path from "path";
+import os from "os";
 
 const template = `# Agent Working Memory (Internal State - Update via Tool Call)
 *Instructions for Agent: This section tracks the current state of the terminal environment and interaction. Use the \`update_working_memory\` tool to modify the values below whenever the state changes significantly (e.g., after changing directory, detecting project type, or focusing on a specific file). Keep values concise and accurate.*
@@ -28,12 +31,27 @@ const template = `# Agent Working Memory (Internal State - Update via Tool Call)
 
 *End of Working Memory Section*`;
 
+// 使用 path.join 和 os.homedir() 来正确展开用户主目录
+const dbDir = path.join(os.homedir(), ".config", "closx");
+const dbpath = `file:${path.join(dbDir, "local.db")}`;
+
 // Initialize memory with LibSQL defaults
 export const shellMemory = new Memory({
-    options: {
-        workingMemory: {
-            enabled: true,
-            use: "tool-call", // Recommended setting
-        },
-    }
+  storage: new LibSQLStore({
+    config: {
+      url: dbpath,
+    },
+  }),
+  // this is the default vector db if omitted
+  vector: new LibSQLVector({
+    connectionUrl: dbpath,
+  }),
+  options: {
+    lastMessages: 5,
+    semanticRecall: false,
+    workingMemory: {
+      enabled: true,
+      use: "tool-call", // Recommended setting
+    },
+  },
 });
