@@ -4,6 +4,7 @@ import { LibSQLStore } from "@mastra/core/storage/libsql";
 import { LibSQLVector } from "@mastra/core/vector/libsql";
 import path from "path";
 import os from "os";
+import fs from "fs";
 
 const template = `# Agent Working Memory (Internal State - Update via Tool Call)
 *Instructions for Agent: This section tracks the current state of the terminal environment and interaction. Use the \`update_working_memory\` tool to modify the values below whenever the state changes significantly (e.g., after changing directory, detecting project type, or focusing on a specific file). Keep values concise and accurate.*
@@ -33,6 +34,17 @@ const template = `# Agent Working Memory (Internal State - Update via Tool Call)
 
 // 使用 path.join 和 os.homedir() 来正确展开用户主目录
 const dbDir = path.join(os.homedir(), ".config", "closx");
+
+// 检查目录是否存在，如果不存在则创建
+if (!fs.existsSync(dbDir)) {
+  try {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log(`创建数据库目录: ${dbDir}`);
+  } catch (error) {
+    console.error(`创建数据库目录失败: ${error}`);
+  }
+}
+
 const dbpath = `file:${path.join(dbDir, "local.db")}`;
 
 // Initialize memory with LibSQL defaults

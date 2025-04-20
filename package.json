@@ -1,6 +1,6 @@
 {
   "name": "closx-cli",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "CLI tool based on @mastra/core framework",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -20,7 +20,7 @@
     "publish:npm": "npm run build:bundle && npm publish"
   },
   "bin": {
-    "closx": "./bin/app.js"
+    "closx": "bin/app.js"
   },
   "files": [
     "dist",
