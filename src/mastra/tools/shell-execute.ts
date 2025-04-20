@@ -137,99 +137,19 @@ export const shellExecuteTool = createTool({
 
       if (needsConfirmation) {
         try {
-          console.log('\n\n' + chalk.yellow('╔════════════════════════════════════╗'));
-          console.log(chalk.yellow('║       🔍 命令确认请求              ║'));
-          console.log(chalk.yellow('╚════════════════════════════════════╝'));
+          console.log(chalk.yellow('Command confirmation required'));
           
-          ConsoleUtils.showWarning(`Confirmation required for: ${ConsoleUtils.formatCommand(command)} (Reason: ${confirmationReason})`);
+          ConsoleUtils.showWarning(`Confirm execution: `);
+          console.log(`Command: ${ConsoleUtils.formatCommand(command)}`);
           
-          const { action } = await inquirer.prompt({
-            type: 'list',
-            name: 'action',
-            message: '请选择操作:',
-            choices: [
-              { name: '✅ 执行命令', value: 'execute' },
-              { name: '🔄 修改并执行', value: 'modify' },
-              { name: '❓ 查看命令详情', value: 'details' },
-              { name: '❌ 拒绝执行', value: 'reject' }
-            ],
-            default: confirmDefault ? 'execute' : 'reject',
+          const { confirm } = await inquirer.prompt({
+            type: 'confirm',
+            name: 'confirm',
+            message: 'Execute this command?',
+            default: confirmDefault,
           });
           
-          if (action === 'modify') {
-            const { modifiedCommand } = await inquirer.prompt({
-              type: 'input',
-              name: 'modifiedCommand',
-              message: '请修改命令:',
-              default: command
-            });
-            if (modifiedCommand && modifiedCommand !== command) {
-              confirmedToExecute = true;
-              // 更新要执行的命令
-              command = modifiedCommand;
-            } else {
-              // 用户没有修改命令或清空输入，回到选择菜单
-              const { retry } = await inquirer.prompt({
-                type: 'list',
-                name: 'retry',
-                message: '命令未更改，请选择:',
-                choices: [
-                  { name: '✅ 执行原命令', value: 'execute' },
-                  { name: '❌ 拒绝执行', value: 'reject' }
-                ]
-              });
-              confirmedToExecute = retry === 'execute';
-            }
-          } else if (action === 'details') {
-            console.log('\n' + chalk.cyan('╔════════════════════════════════════╗'));
-            console.log(chalk.cyan('║       ℹ️ 命令详细信息              ║'));
-            console.log(chalk.cyan('╚════════════════════════════════════╝'));
-            console.log(`命令: ${ConsoleUtils.formatCommand(command)}`);
-            console.log(`工作目录: ${cwd || '当前目录'}`);
-            console.log(`确认原因: ${confirmationReason}`);
-            console.log(`超时设置: ${timeout ? timeout + 'ms' : '无'}`);
-            
-            // 显示详情后返回到选择菜单
-            const { retry } = await inquirer.prompt({
-              type: 'list',
-              name: 'retry',
-              message: '请选择操作:',
-              choices: [
-                { name: '✅ 执行命令', value: 'execute' },
-                { name: '🔄 修改并执行', value: 'modify' },
-                { name: '❌ 拒绝执行', value: 'reject' }
-              ],
-              default: confirmDefault ? 'execute' : 'reject',
-            });
-            
-            if (retry === 'modify') {
-              const { modifiedCommand } = await inquirer.prompt({
-                type: 'input',
-                name: 'modifiedCommand',
-                message: '请修改命令:',
-                default: command
-              });
-              
-              if (modifiedCommand && modifiedCommand !== command) {
-                confirmedToExecute = true;
-                // 更新要执行的命令
-                command = modifiedCommand;
-              } else {
-                // 用户没有修改命令，询问是否执行原命令
-                const { execute } = await inquirer.prompt({
-                  type: 'confirm',
-                  name: 'execute',
-                  message: '命令未更改，是否执行原命令?',
-                  default: confirmDefault
-                });
-                confirmedToExecute = execute;
-              }
-            } else {
-              confirmedToExecute = retry === 'execute';
-            }
-          } else {
-            confirmedToExecute = action === 'execute';
-          }
+          confirmedToExecute = confirm;
         } catch (error: any) {
           return resolve({
             stdout: '',
@@ -240,9 +160,7 @@ export const shellExecuteTool = createTool({
       }
 
       if (!confirmedToExecute) {
-        console.log('\n' + chalk.red('╔════════════════════════════════════╗'));
-        console.log(chalk.red('║       ⛔ 命令执行已取消            ║'));
-        console.log(chalk.red('╚════════════════════════════════════╝') + '\n');
+        console.log(chalk.red('Command execution cancelled'));
         
         const reason = needsConfirmation ? `cancelled by user (${confirmationReason})` : 'permission check failed';
         return resolve({
@@ -252,9 +170,7 @@ export const shellExecuteTool = createTool({
         });
       }
 
-      console.log('\n' + chalk.green('╔════════════════════════════════════╗'));
-      console.log(chalk.green('║       🚀 开始执行命令              ║'));
-      console.log(chalk.green('╚════════════════════════════════════╝') + '\n');
+      console.log(chalk.green('Starting command execution'));
 
       const options: SpawnOptions = {
         shell: true,
@@ -322,15 +238,10 @@ export const shellExecuteTool = createTool({
         if (timeoutId) clearTimeout(timeoutId);
         removeAllListeners();
         
-        // 添加命令执行完成的视觉标识
         if (code === 0) {
-          console.log('\n' + chalk.green('╔════════════════════════════════════╗'));
-          console.log(chalk.green('║       ✅ 命令执行成功              ║'));
-          console.log(chalk.green('╚════════════════════════════════════╝') + '\n');
+          console.log(chalk.green('Command executed successfully'));
         } else {
-          console.log('\n' + chalk.red('╔════════════════════════════════════╗'));
-          console.log(chalk.red(`║       ❌ 命令执行失败 (代码: ${code})      ║`));
-          console.log(chalk.red('╚════════════════════════════════════╝') + '\n');
+          console.log(chalk.red(`Command failed with code: ${code}`));
         }
         
         resolve({ stdout: stdoutData, stderr: stderrData, exitCode: code });
@@ -342,10 +253,8 @@ export const shellExecuteTool = createTool({
         if (timeoutId) clearTimeout(timeoutId);
         removeAllListeners();
         
-        console.log('\n' + chalk.red('╔════════════════════════════════════╗'));
-        console.log(chalk.red('║       ❌ 命令执行错误              ║'));
-        console.log(chalk.red('╚════════════════════════════════════╝') + '\n');
-        console.error(`错误信息: ${error.message}`);
+        console.log(chalk.red('Command execution error'));
+        console.error(`Error: ${error.message}`);
         
         resolve({ stdout: stdoutData, stderr: `${stderrData}\nCommand execution error: ${error.message}`, exitCode: 1 });
       });
@@ -356,9 +265,7 @@ export const shellExecuteTool = createTool({
             commandFinished = true;
             removeAllListeners();
             
-            console.log('\n' + chalk.yellow('╔════════════════════════════════════╗'));
-            console.log(chalk.yellow(`║   ⏱️ 命令执行超时 (${timeout}ms)       ║`));
-            console.log(chalk.yellow('╚════════════════════════════════════╝') + '\n');
+            console.log(chalk.yellow(`Command timed out after ${timeout}ms`));
             
             if (childProcess && typeof childProcess.kill === 'function') {
               try {
@@ -436,9 +343,7 @@ export async function executeShellCommand(
     !options.skipBlacklistCheck &&
     isCommandBlacklisted(executionCommand, blacklist)
   ) {
-    console.log('\n' + chalk.red('╔════════════════════════════════════╗'));
-    console.log(chalk.red('║       ⚠️ 黑名单命令警告              ║'));
-    console.log(chalk.red('╚════════════════════════════════════╝') + '\n');
+    console.log(chalk.red('Blacklisted command warning'));
     
     ConsoleUtils.showWarning(
       `Command '${executionCommand}' is blacklisted and cannot be executed.`
@@ -463,106 +368,22 @@ export async function executeShellCommand(
   }
 
   if (needsConfirmation && !options.skipConfirmation) {
-    // 添加明显的分隔线和标题，提高确认提示的可见性
-    console.log('\n' + chalk.yellow('╔════════════════════════════════════╗'));
-    console.log(chalk.yellow('║       🔍 命令确认请求              ║'));
-    console.log(chalk.yellow('╚════════════════════════════════════╝') + '\n');
+    console.log(chalk.yellow('Command confirmation required'));
     
-    ConsoleUtils.showWarning(`Confirmation required for: ${ConsoleUtils.formatCommand(executionCommand)} (Reason: ${confirmationReason})`);
+    ConsoleUtils.showWarning(`Confirm execution: (Reason: ${confirmationReason})`);
+    console.log(`Command: ${ConsoleUtils.formatCommand(executionCommand)}`);
     
-    const { action } = await inquirer.prompt([
+    const { confirm } = await inquirer.prompt([
       {
-        type: "list",
-        name: "action",
-        message: "请选择操作:",
-        choices: [
-          { name: "✅ 执行命令", value: "execute" },
-          { name: "🔄 修改并执行", value: "modify" },
-          { name: "❓ 查看命令详情", value: "details" },
-          { name: "❌ 拒绝执行", value: "reject" }
-        ],
-        default: "reject",
+        type: "confirm",
+        name: "confirm",
+        message: "Execute this command?",
+        default: false,
       }
     ]);
     
-    let executeCommand = false;
-    
-    if (action === "modify") {
-      const { modifiedCommand } = await inquirer.prompt([
-        {
-          type: "input",
-          name: "modifiedCommand",
-          message: "请修改命令:",
-          default: executionCommand
-        }
-      ]);
-      
-      if (modifiedCommand && modifiedCommand !== executionCommand) {
-        executeCommand = true;
-        executionCommand = modifiedCommand;
-      } else {
-        // 用户没有修改命令，询问是否执行原命令
-        const { execute } = await inquirer.prompt([{
-          type: "confirm",
-          name: "execute",
-          message: "命令未更改，是否执行原命令?",
-          default: false
-        }]);
-        executeCommand = execute;
-      }
-    } else if (action === "details") {
-      console.log('\n' + chalk.cyan('╔════════════════════════════════════╗'));
-      console.log(chalk.cyan('║       ℹ️ 命令详细信息              ║'));
-      console.log(chalk.cyan('╚════════════════════════════════════╝'));
-      console.log(`命令: ${ConsoleUtils.formatCommand(executionCommand)}`);
-      console.log(`工作目录: ${options.cwd || '当前目录'}`);
-      console.log(`确认原因: ${confirmationReason}`);
-      
-      // 显示详情后返回到选择菜单
-      const { retry } = await inquirer.prompt([{
-        type: "list",
-        name: "retry",
-        message: "请选择操作:",
-        choices: [
-          { name: "✅ 执行命令", value: "execute" },
-          { name: "🔄 修改并执行", value: "modify" },
-          { name: "❌ 拒绝执行", value: "reject" }
-        ],
-        default: "reject",
-      }]);
-      
-      if (retry === "modify") {
-        const { modifiedCommand } = await inquirer.prompt([{
-          type: "input",
-          name: "modifiedCommand",
-          message: "请修改命令:",
-          default: executionCommand
-        }]);
-        
-        if (modifiedCommand && modifiedCommand !== executionCommand) {
-          executeCommand = true;
-          executionCommand = modifiedCommand;
-        } else {
-          // 用户没有修改命令，询问是否执行原命令
-          const { execute } = await inquirer.prompt([{
-            type: "confirm",
-            name: "execute",
-            message: "命令未更改，是否执行原命令?",
-            default: false
-          }]);
-          executeCommand = execute;
-        }
-      } else {
-        executeCommand = retry === "execute";
-      }
-    } else {
-      executeCommand = action === "execute";
-    }
-
-    if (!executeCommand) {
-      console.log('\n' + chalk.red('╔════════════════════════════════════╗'));
-      console.log(chalk.red('║       ⛔ 命令执行已取消            ║'));
-      console.log(chalk.red('╚════════════════════════════════════╝') + '\n');
+    if (!confirm) {
+      console.log(chalk.red('Command execution cancelled'));
       
       return {
         success: false,
@@ -573,20 +394,14 @@ export async function executeShellCommand(
   }
 
   try {
-    // 添加明显的执行开始标识
-    console.log('\n' + chalk.green('╔════════════════════════════════════╗'));
-    console.log(chalk.green('║       🚀 开始执行命令              ║'));
-    console.log(chalk.green('╚════════════════════════════════════╝') + '\n');
+    console.log(chalk.green('Starting command execution'));
     
     const { stdout, stderr } = await execAsync(executionCommand, {
       cwd: options.cwd,
       ...(options.execOptions || {}),
     });
 
-    // 添加执行完成标识
-    console.log('\n' + chalk.green('╔════════════════════════════════════╗'));
-    console.log(chalk.green('║       ✅ 命令执行完成              ║'));
-    console.log(chalk.green('╚════════════════════════════════════╝') + '\n');
+    console.log(chalk.green('Command executed successfully'));
     
     return {
       success: true,
@@ -594,13 +409,10 @@ export async function executeShellCommand(
       stderr,
     };
   } catch (error) {
-    // 添加错误标识
-    console.log('\n' + chalk.red('╔════════════════════════════════════╗'));
-    console.log(chalk.red('║       ❌ 命令执行失败              ║'));
-    console.log(chalk.red('╚════════════════════════════════════╝') + '\n');
+    console.log(chalk.red('Command execution failed'));
     
     const err = error as ExecException & { stdout?: string; stderr?: string };
-    console.error(`错误信息: ${err.message}`);
+    console.error(`Error: ${err.message}`);
     
     return {
       success: false,
