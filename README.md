@@ -18,21 +18,10 @@ CLOSX 是一个基于 Mastra 框架和 AI SDK 构建的交互式命令行 AI 助
 
 ## 📦 安装
 
-### 通过 GitHub Packages 安装
-
-首先，创建或编辑 `~/.npmrc` 文件，添加以下内容：
-
-```
-@laomeifun:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
-```
-
-您需要创建一个具有 `read:packages` 权限的 GitHub 个人访问令牌（Personal Access Token）来替换 `YOUR_GITHUB_TOKEN`。
-
-然后，使用以下命令安装：
+### 通过 npm 安装
 
 ```bash
-npm install -g @laomeifun/closx
+npm install -g closx-cli
 ```
 
 ### 从源码安装

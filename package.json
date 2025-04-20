@@ -1,6 +1,6 @@
 {
-  "name": "@laomeifun/closx",
-  "version": "1.0.0",
+  "name": "closx-cli",
+  "version": "1.0.2",
   "description": "CLI tool based on @mastra/core framework",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -16,7 +16,8 @@
     "start": "tsx src/cli/index.ts",
     "cli": "tsx --env-file .env.development src/cli/index.ts",
     "prepublishOnly": "npm run build:bundle",
-    "publish:github": "npm run build:bundle && npm publish"
+    "publish:github": "npm run build:bundle && npm publish",
+    "publish:npm": "npm run build:bundle && npm publish"
   },
   "bin": {
     "closx": "./bin/app.js"
@@ -63,7 +64,6 @@
     "typescript": "^5.8.3"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
     "access": "public"
   }
 }
