@@ -136,7 +136,15 @@ export class TerminalAgent {
    */
   private async executeOneCommand(command: string, options: TerminalAgentOptions = {}): Promise<void> {
     try {
-      await this.commandProcessor.executeOneCommand(command, options);
+      // 确保在非交互模式下也应用黑名单检查逻辑
+      // 添加交互式参数，即使在非交互模式下也要求确认黑名单命令
+      const enhancedOptions = {
+        ...options,
+        interactive: true, // 启用交互式确认
+        blacklistCheck: true // 添加一个标记，表示需要检查黑名单
+      };
+      
+      await this.commandProcessor.executeOneCommand(command, enhancedOptions);
       
       // Automatically exit after executing one-time command
       // Use timeout to ensure all output is completed

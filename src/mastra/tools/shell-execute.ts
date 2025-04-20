@@ -1,6 +1,9 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { spawn } from 'child_process';
+import inquirer from 'inquirer';
+import { isCommandAllowed, getCommandBlacklist } from '../../config/settings';
+import { ConsoleUtils } from '../../cli/utils/console-utils';
 
 /**
  * Shell command execution tool
@@ -21,7 +24,37 @@ export const shellExecuteTool = createTool({
     exitCode: z.number().nullable().describe('Exit code of the command, 0 if successful'),
   }),
   execute: async ({ context }) => {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
+      // 检查命令是否在黑名单中
+      const blacklist = getCommandBlacklist();
+      const isBlacklisted = blacklist.some(blackCmd => context.command.includes(blackCmd));
+      
+      // 如果命令在黑名单中，需要用户确认
+      if (isBlacklisted) {
+        ConsoleUtils.showWarning(`命令包含黑名单关键字: ${context.command}`);
+        const { confirmBlacklisted } = await inquirer.prompt({
+          type: 'confirm',
+          name: 'confirmBlacklisted',
+          message: `该命令包含黑名单关键字，是否仍然执行？`,
+          default: false
+        });
+        
+        if (!confirmBlacklisted) {
+          return resolve({
+            stdout: '',
+            stderr: '命令执行已取消（黑名单原因）',
+            exitCode: 1
+          });
+        }
+      } else if (!isCommandAllowed(context.command)) {
+        ConsoleUtils.showWarning(`命令被禁止执行: ${context.command}`);
+        return resolve({
+          stdout: '',
+          stderr: '此命令被禁止执行',
+          exitCode: 1
+        });
+      }
+      
       // Parse command and arguments
       const args = context.command.split(' ');
       const cmd = args.shift() || '';

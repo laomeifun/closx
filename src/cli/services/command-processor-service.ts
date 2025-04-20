@@ -91,7 +91,8 @@ export class CommandProcessorService {
         { 
           executeCommands: true,
           interactive: true, // Enable interactive confirmation
-          interactiveCommand: true // Enable interactive command execution
+          interactiveCommand: true, // Enable interactive command execution
+          blacklistCheck: true // 启用黑名单检查
         }
       );
       
@@ -154,7 +155,8 @@ export class CommandProcessorService {
         responseText, 
         { 
           executeCommands: false,
-          interactive: false // No need for interactive confirmation in recursive processing
+          interactive: false, // No need for interactive confirmation in recursive processing
+          blacklistCheck: true // 启用黑名单检查
         }
       );
       

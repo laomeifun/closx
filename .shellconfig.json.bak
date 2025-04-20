@@ -1,0 +1,28 @@
+{
+  "models": {
+    "newapi": {
+      "name": "newapi",
+      "provider": "openai",
+      "apiKey": "sk-bwD2U3nZg2gVYy6YSO65wpcgYQFUven0X7iGghSbjleSmaqh",
+      "baseURL": "https://api.laomei.site/v1",
+      "model": "grok-3-beta",
+      "temperature": 0.3,
+      "maxTokens": 8194
+    }
+  },
+  "settings": {
+    "defaultModel": "newapi",
+    "logLevel": "info",
+    "allowAutoExecution": true,
+    "commandExecutionMode": "whitelist",
+    "commandWhitelist": [
+      "ls", "cat", "echo", "pwd", "find", "grep",
+      "npm list", "npm run", "npm start", "npm test",
+      "node --version", "npm --version"
+    ],
+    "commandBlacklist": [
+      "rm -rf", "sudo", "chmod 777", "mkfs",
+      "dd if=/dev/zero", "mv /* /dev/null"
+    ]
+  }
+}

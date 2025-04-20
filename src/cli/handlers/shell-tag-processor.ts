@@ -6,6 +6,8 @@ import { ConsoleUtils } from '../utils/console-utils';
 import inquirer from 'inquirer';
 import { AgentService } from '../services/agent-service';
 import { ChatMessage } from '../types/terminal-types';
+import { CommandExecutionMode } from '../../config/types';
+import { getCommandExecutionMode, shouldConfirmCommand, isCommandAllowed, settingsManager } from '../../config/settings';
 
 /**
  * Command Execution Result
@@ -42,7 +44,8 @@ export class ShellTagProcessor {
       executeCommands?: boolean; 
       interactive?: boolean;
       interactiveCommand?: boolean; // Whether to execute commands in interactive mode
-    } = { executeCommands: true, interactive: true, interactiveCommand: false }
+      blacklistCheck?: boolean; // Whether to check blacklist even in non-interactive mode
+    } = { executeCommands: true, interactive: true, interactiveCommand: false, blacklistCheck: false }
   ): Promise<CommandExecutionResult[]> {
     // Find content inside <shell></shell> tags
     const shellTagRegex = /<shell>([\s\S]*?)<\/shell>/g;
@@ -77,23 +80,124 @@ export class ShellTagProcessor {
       for (let i = 0; i < commands.length; i++) {
         console.log(`${i + 1}. ${ConsoleUtils.formatCommand(commands[i])}`);
       }
-      
-      // If in interactive mode, ask user for confirmation
+
+      // 获取当前的命令执行模式
+      const executionMode = getCommandExecutionMode();
+
+      // 检查是否有黑名单命令
+      const blacklist: string[] = settingsManager.getCommandBlacklist();
+      const hasBlacklistedCommands = commands.some((cmd: string) =>
+        blacklist.some((blackCmd: string) => cmd.includes(blackCmd))
+      );
+
+      // 初始化执行标志
       let shouldExecute = true;
-      if (options.interactive && commands.length > 0) {
+
+      // 首先检查是否有黑名单命令
+      if (hasBlacklistedCommands) {
+        // 如果有黑名单命令，始终需要确认
+        ConsoleUtils.showWarning('⚠️ 检测到黑名单命令！');
         const { confirm } = await inquirer.prompt({
           type: 'confirm',
           name: 'confirm',
-          message: 'Execute these commands?',
-          default: true
+          message: '检测到黑名单命令，是否继续执行？',
+          default: false, // 默认不执行黑名单命令
         });
         
         shouldExecute = confirm;
+      } else if (executionMode === CommandExecutionMode.MESSAGE) {
+        // 如果是消息模式，不执行任何命令
+        ConsoleUtils.showInfo('当前处于消息模式，命令将仅显示而不执行');
+        shouldExecute = false;
+      } else if (executionMode === CommandExecutionMode.AUTO) {
+        // 如果是全自动模式且没有黑名单命令，自动执行
+        shouldExecute = true;
+      } else if (options.interactive) {
+        // 如果要求交互式确认
+        if (executionMode === CommandExecutionMode.WHITELIST || executionMode === CommandExecutionMode.BLACKLIST) {
+          // 检查是否所有命令都需要确认
+          const needConfirmation = commands.some(cmd => shouldConfirmCommand(cmd));
+          
+          if (needConfirmation) {
+            const { confirm } = await inquirer.prompt({
+              type: 'confirm',
+              name: 'confirm',
+              message: '执行这些命令？',
+              default: true,
+            });
+            
+            shouldExecute = confirm;
+          } else {
+            // 如果所有命令都不需要确认，则自动执行
+            shouldExecute = true;
+          }
+        } else {
+          // 其他模式下的默认行为
+          const { confirm } = await inquirer.prompt({
+            type: 'confirm',
+            name: 'confirm',
+            message: '执行这些命令？',
+            default: true,
+          });
+          
+          shouldExecute = confirm;
+        }
       }
-      
+
       if (shouldExecute) {
         // Execute all commands
         for (const cmd of commands) {
+          // 检查命令是否允许执行
+          // 首先检查黑名单
+          const isBlacklisted = blacklist.some((blackCmd: string) => cmd.includes(blackCmd));
+          
+          if (isBlacklisted) {
+            ConsoleUtils.showWarning(`命令包含黑名单关键字: ${cmd}`);
+            const { confirmBlacklisted } = await inquirer.prompt({
+              type: 'confirm',
+              name: 'confirmBlacklisted',
+              message: `该命令包含黑名单关键字，是否仍然执行？`,
+              default: false
+            });
+            
+            if (!confirmBlacklisted) {
+              results.push({
+                command: cmd,
+                output: '命令执行已取消（黑名单原因）',
+                exitCode: 1
+              });
+              continue;
+            }
+          } else if (!isCommandAllowed(cmd)) {
+            ConsoleUtils.showWarning(`命令被禁止执行: ${cmd}`);
+            results.push({
+              command: cmd,
+              output: '此命令被禁止执行',
+              exitCode: 1
+            });
+            continue;
+          }
+          
+          // 如果是白名单或黑名单模式，可能需要单独确认每个命令
+          const mode = getCommandExecutionMode();
+          if ((mode === CommandExecutionMode.WHITELIST || mode === CommandExecutionMode.BLACKLIST) && 
+              options.interactive && shouldConfirmCommand(cmd)) {
+            const { confirmCmd } = await inquirer.prompt({
+              type: 'confirm',
+              name: 'confirmCmd',
+              message: `执行命令: ${cmd}?`,
+              default: true
+            });
+            
+            if (!confirmCmd) {
+              results.push({
+                command: cmd,
+                output: '命令执行已取消',
+                exitCode: 0
+              });
+              continue;
+            }
+          }
           let result: ShellExecutionResult;
           let output: string;
           

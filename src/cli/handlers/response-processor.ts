@@ -100,6 +100,7 @@ export class ResponseProcessor {
       executeCommands: boolean;
       interactive: boolean;
       interactiveCommand?: boolean;
+      blacklistCheck?: boolean; // 添加黑名单检查参数
     }
   ): Promise<{command: string; output: string; exitCode?: number}[]> {
     return this.shellTagProcessor.processShellTags(
