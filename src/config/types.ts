@@ -27,6 +27,8 @@ export interface AppSettings {
   readonly defaultModel?: string;
   readonly logLevel?: 'debug' | 'info' | 'warn' | 'error';
   readonly allowAutoExecution?: boolean;
+  readonly commandWhitelist?: string[];
+  readonly commandBlacklist?: string[];
 }
 
 /**

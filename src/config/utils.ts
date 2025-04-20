@@ -207,7 +207,18 @@ export const createConfigTemplate = async (configPath: string = '~/.closx'): Pro
       settings: {
         defaultModel: 'openai-custom',  // 默认使用的模型ID
         logLevel: 'info',              // 日志级别
-        allowAutoExecution: false      // 是否允许自动执行命令
+        allowAutoExecution: false,     // 是否允许自动执行命令
+        // 命令执行白名单，允许自动执行的命令
+        commandWhitelist: [
+          'ls', 'cat', 'echo', 'pwd', 'find', 'grep',
+          'npm list', 'npm run', 'npm start', 'npm test',
+          'node --version', 'npm --version'
+        ],
+        // 命令执行黑名单，禁止执行的命令
+        commandBlacklist: [
+          'rm -rf', 'sudo', 'chmod 777', 'mkfs',
+          'dd if=/dev/zero', 'mv /* /dev/null'
+        ]
       }
     };
     

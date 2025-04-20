@@ -17,7 +17,16 @@ export class SettingsManager {
   private constructor() {
     this.settings = {
       logLevel: 'info',
-      allowAutoExecution: ALLOW_AUTO_EXECUTION
+      allowAutoExecution: ALLOW_AUTO_EXECUTION,
+      commandWhitelist: [
+        'ls', 'cat', 'echo', 'pwd', 'find', 'grep',
+        'npm list', 'npm run', 'npm start', 'npm test',
+        'node --version', 'npm --version'
+      ],
+      commandBlacklist: [
+        'rm -rf', 'sudo', 'chmod 777', 'mkfs',
+        'dd if=/dev/zero', 'mv /* /dev/null'
+      ]
     };
   }
 
@@ -171,6 +180,114 @@ export class SettingsManager {
   public setLogLevel(level: 'debug' | 'info' | 'warn' | 'error'): void {
     this.settings = { ...this.settings, logLevel: level };
   }
+
+  /**
+   * 获取命令白名单
+   * @returns 命令白名单数组
+   */
+  public getCommandWhitelist(): string[] {
+    return this.settings.commandWhitelist || [];
+  }
+
+  /**
+   * 设置命令白名单
+   * @param commands 命令白名单数组
+   */
+  public setCommandWhitelist(commands: string[]): void {
+    this.settings = { ...this.settings, commandWhitelist: commands };
+  }
+
+  /**
+   * 向命令白名单添加命令
+   * @param command 要添加的命令
+   */
+  public addToCommandWhitelist(command: string): void {
+    const currentWhitelist = this.getCommandWhitelist();
+    if (!currentWhitelist.includes(command)) {
+      this.setCommandWhitelist([...currentWhitelist, command]);
+    }
+  }
+
+  /**
+   * 从命令白名单移除命令
+   * @param command 要移除的命令
+   */
+  public removeFromCommandWhitelist(command: string): void {
+    const currentWhitelist = this.getCommandWhitelist();
+    this.setCommandWhitelist(currentWhitelist.filter(cmd => cmd !== command));
+  }
+
+  /**
+   * 获取命令黑名单
+   * @returns 命令黑名单数组
+   */
+  public getCommandBlacklist(): string[] {
+    return this.settings.commandBlacklist || [];
+  }
+
+  /**
+   * 设置命令黑名单
+   * @param commands 命令黑名单数组
+   */
+  public setCommandBlacklist(commands: string[]): void {
+    this.settings = { ...this.settings, commandBlacklist: commands };
+  }
+
+  /**
+   * 向命令黑名单添加命令
+   * @param command 要添加的命令
+   */
+  public addToCommandBlacklist(command: string): void {
+    const currentBlacklist = this.getCommandBlacklist();
+    if (!currentBlacklist.includes(command)) {
+      this.setCommandBlacklist([...currentBlacklist, command]);
+    }
+  }
+
+  /**
+   * 从命令黑名单移除命令
+   * @param command 要移除的命令
+   */
+  public removeFromCommandBlacklist(command: string): void {
+    const currentBlacklist = this.getCommandBlacklist();
+    this.setCommandBlacklist(currentBlacklist.filter(cmd => cmd !== command));
+  }
+
+  /**
+   * 检查命令是否允许执行
+   * @param command 要检查的命令
+   * @returns 是否允许执行
+   */
+  public isCommandAllowed(command: string): boolean {
+    // 如果不允许自动执行，直接返回 false
+    if (!this.isAutoExecutionAllowed()) {
+      return false;
+    }
+
+    const whitelist = this.getCommandWhitelist();
+    const blacklist = this.getCommandBlacklist();
+
+    // 检查黑名单
+    for (const blackCmd of blacklist) {
+      if (command.includes(blackCmd)) {
+        return false;
+      }
+    }
+
+    // 如果白名单为空，则允许所有不在黑名单中的命令
+    if (whitelist.length === 0) {
+      return true;
+    }
+
+    // 检查白名单
+    for (const whiteCmd of whitelist) {
+      if (command.startsWith(whiteCmd)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
 
 // 导出单例实例
@@ -191,4 +308,16 @@ export const getDefaultModelId = (): string | undefined => {
 
 export const getLogLevel = (): string => {
   return settingsManager.getLogLevel();
+};
+
+export const getCommandWhitelist = (): string[] => {
+  return settingsManager.getCommandWhitelist();
+};
+
+export const getCommandBlacklist = (): string[] => {
+  return settingsManager.getCommandBlacklist();
+};
+
+export const isCommandAllowed = (command: string): boolean => {
+  return settingsManager.isCommandAllowed(command);
 };
