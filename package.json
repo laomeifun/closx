@@ -1,7 +1,10 @@
 {
-  "name": "closx",
+  "name": "@laomeifun/closx",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "CLI tool based on @mastra/core framework",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "mastra dev",
@@ -11,16 +14,33 @@
     "build": "tsc",
     "build:bundle": "node build.js",
     "start": "tsx src/cli/index.ts",
-    "cli": "tsx --env-file .env.development src/cli/index.ts"
+    "cli": "tsx --env-file .env.development src/cli/index.ts",
+    "prepublishOnly": "npm run build:bundle",
+    "publish:github": "npm run build:bundle && npm publish"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "type": "module",
   "bin": {
-    "app": "./bin/app.js"
+    "closx": "./bin/app.js"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laomeifun/closx.git"
+  },
+  "keywords": [
+    "cli",
+    "mastra",
+    "agent",
+    "shell"
+  ],
+  "author": "laomeifun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/laomeifun/closx/issues"
+  },
+  "homepage": "https://github.com/laomeifun/closx#readme",
   "dependencies": {
     "@ai-sdk/openai": "^1.3.16",
     "@ai-sdk/ui-utils": "^1.2.8",
@@ -41,5 +61,9 @@
     "esbuild-node-externals": "^1.18.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   }
 }

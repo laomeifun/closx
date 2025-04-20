@@ -1,7 +1,7 @@
 # CLOSX - 您的智能终端助手
 
 ![Version](https://img.shields.io/badge/版本-1.0.0-blue)
-![License](https://img.shields.io/badge/许可证-ISC-green)
+![License](https://img.shields.io/badge/许可证-MIT-green)
 [![Powered by Mastra](https://img.shields.io/badge/强力驱动-Mastra-orange)](https://github.com/mastraai/mastra)
 
 CLOSX 是一个基于 Mastra 框架和 AI SDK 构建的交互式命令行 AI 助手。它旨在理解您的自然语言指令，执行 Shell 命令，并提供智能化的终端交互体验。
@@ -18,14 +18,38 @@ CLOSX 是一个基于 Mastra 框架和 AI SDK 构建的交互式命令行 AI 助
 
 ## 📦 安装
 
+### 通过 GitHub Packages 安装
+
+首先，创建或编辑 `~/.npmrc` 文件，添加以下内容：
+
+```
+@laomeifun:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
+```
+
+您需要创建一个具有 `read:packages` 权限的 GitHub 个人访问令牌（Personal Access Token）来替换 `YOUR_GITHUB_TOKEN`。
+
+然后，使用以下命令安装：
+
+```bash
+npm install -g @laomeifun/closx
+```
+
+### 从源码安装
+
 1.  **克隆仓库:**
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/laomeifun/closx.git
     cd closx
     ```
-2.  **安装依赖:**
+2.  **安装依赖并构建:**
     ```bash
     npm install
+    npm run build:bundle
+    ```
+3.  **全局链接:**
+    ```bash
+    npm link
     ```
 
 ## ⚙️ 配置
@@ -90,16 +114,16 @@ CLOSX 可以通过环境变量或配置文件进行配置。
 }
 ```
 
-**注意:** 您可以使用 `npm run cli -- --create-config` (如果实现了该功能) 或手动创建此文件。CLOSX 会按照优先级选择模型（配置文件默认 > 指定 ID > 配置文件第一个 > 环境变量默认 > 硬编码默认）。
+**注意:** 您可以使用 `closx --create-config` (如果实现了该功能) 或手动创建此文件。CLOSX 会按照优先级选择模型（配置文件默认 > 指定 ID > 配置文件第一个 > 环境变量默认 > 硬编码默认）。
 
 ## 🚀 使用方法
 
 ### 启动交互式会话
 
 ```bash
-npm run cli
+closx
 # 或者
-npm run cli -i
+closx -i
 ```
 
 启动后，您可以直接输入自然语言指令或特殊命令。
@@ -107,7 +131,7 @@ npm run cli -i
 ### 直接执行单个命令
 
 ```bash
-npm run cli "你的问题或命令"
+closx "你的问题或命令"
 ```
 
 CLOSX 将处理您的请求，执行必要的 AI 调用或 Shell 命令，然后退出。
@@ -178,7 +202,7 @@ npm run cli
 npm run build:bundle
 ```
 
-打包后的文件位于 `bin/app.js`。
+打包后的文件位于 `dist` 目录。
 
 ## 📚 相关技术
 
@@ -194,4 +218,4 @@ npm run build:bundle
 
 ## 📄 许可证
 
-ISC
+MIT

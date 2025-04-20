@@ -3,6 +3,7 @@ import { nodeExternalsPlugin } from 'esbuild-node-externals';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
+import { chmod } from 'fs/promises';
 
 // 获取当前文件的目录
 const __filename = fileURLToPath(import.meta.url);
@@ -85,6 +86,20 @@ async function createPackageExports() {
 }
 
 /**
+ * 设置bin/app.js的可执行权限
+ * @returns {Promise<void>}
+ */
+async function setBinPermissions() {
+  const binPath = path.join(__dirname, 'bin', 'app.js');
+  try {
+    await chmod(binPath, 0o755); // rwxr-xr-x
+    console.log('已设置bin/app.js的可执行权限');
+  } catch (error) {
+    console.error('设置bin/app.js权限时出错:', error);
+  }
+}
+
+/**
  * 主构建函数
  */
 async function build() {
@@ -100,6 +115,9 @@ async function build() {
     
     // 创建package.json配置
     await createPackageExports();
+    
+    // 设置bin/app.js的可执行权限
+    await setBinPermissions();
     
     console.log('所有构建任务完成！');
   } catch (error) {
