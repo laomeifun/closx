@@ -4,7 +4,7 @@ import { directoryInfoTool } from "../tools";
 import { shellPrompt } from "./prompt";
 import { getCurrentEnvironmentTool } from "../tools/get-current-environment";
 import { getCurrentDirectoryTool } from "../tools/get-current-directory";
-import { interactiveShellExecuteTool } from "../tools";
+
 import { shellMemory } from "./shellmemory";
 import config, { getBestAvailableModel, getModel, loadFromAllConfigLocations } from "../../config";
 

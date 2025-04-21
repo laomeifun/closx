@@ -2,12 +2,14 @@
  * Command Processing Service
  * Responsible for handling user commands and agent responses
  */
-import { TerminalAgentOptions } from '../types/terminal-types';
+import { TerminalAgentOptions, ChatMessage } from '../types/terminal-types';
 import { AgentService } from './agent-service';
 import { SessionService } from './session-service';
 import { ResponseProcessor } from '../handlers/response-processor';
 import { SpecialCommandHandler } from '../handlers/special-commands';
 import { TerminalUI } from '../ui/terminal-ui';
+import { ConsoleUtils } from '../utils/console-utils';
+import chalk from 'chalk';
 
 /**
  * Command Processing Service Class
@@ -50,18 +52,18 @@ export class CommandProcessorService {
   }
 
   /**
-   * Process agent responses
-   * @param options - Terminal agent options
-   * @returns Boolean indicating if further processing *related to tool calls* might be needed (always false for <shell> tags).
+   * 处理agent的响应
+   * @param options - 终端agent选项
+   * @returns 布尔值表示是否需要进一步处理
    */
   public async processAgentResponse(options: TerminalAgentOptions = {}): Promise<boolean> {
-    // Show loading animation
+    // 显示加载动画
     const spinner = this.terminalUI.showThinkingAnimation();
 
     try {
-      // Get agent response (non-streaming for testing)
+      // 获取agent响应
       const responseText = await this.agentService.generateResponse(
-        [...this.sessionService.getMessages()], // Convert to mutable array
+        [...this.sessionService.getMessages()], // 转换为可变数组
         {
           resourceId: this.sessionService.getResourceId(),
           threadId: this.sessionService.getThreadId()
@@ -70,104 +72,126 @@ export class CommandProcessorService {
 
       spinner.stop();
 
-      // Process response content for display
+      // 处理响应内容以便显示
       const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
 
-      // Display processed content
+      // 显示处理后的内容
       this.terminalUI.displayAIResponse(processedResponse.displayText);
 
-      // Add assistant message (using original complete response) to history
+      // 添加助手消息到历史记录（使用原始完整响应）
       this.sessionService.addAssistantMessage(responseText);
 
-      // Process <shell> tags just to *log* them if found (doesn't execute)
-      // The returned command strings are ignored here as we don't act on them.
-      await this.responseProcessor.processShellCommands(
-        responseText
-      );
+      // 检查响应中是否包含<shell>标签
+      const hasShellTags = processedResponse.shellCommands.length > 0;
+      
+      // 如果存在<shell>标签，则执行命令并将结果发送回agent
+      if (hasShellTags) {
+        // 执行所有<shell>标签命令
+        const shellResults = await this.responseProcessor.executeShellCommands(responseText);
+        
+        if (shellResults.commands.length > 0 && shellResults.promptForAgent) {
+          // 将执行结果作为用户消息添加到历史记录中
+          this.sessionService.addUserMessage(shellResults.promptForAgent);
+          
+          // 需要继续获取agent对执行结果的响应
+          return true;
+        }
+      }
 
-      // Always return false as we no longer loop based on <shell> tag processing.
-      // Further processing loop might be triggered by actual tool call results, handled elsewhere.
+      // 如果没有<shell>标签，或者标签处理完成但无需进一步响应，则返回false
       return false;
     } catch (error) {
-      spinner.fail('Error occurred');
-      this.terminalUI.showError('Error:', error as Error);
+      spinner.fail('发生错误');
+      this.terminalUI.showError('错误:', error as Error);
       return false;
     }
   }
 
   /**
-   * Process command execution results and get agent response
-   * NOTE: This method's original purpose was tied to <shell> tag execution.
-   * It might be redundant or need refactoring depending on how tool call results are handled.
-   * Keep simplified version for now.
-   * @param options - Terminal agent options
-   * @returns Boolean indicating if further processing is needed (always false for <shell> tags).
+   * 处理命令执行结果并获取agent响应
+   * @param options - 终端agent选项
+   * @returns 布尔值表示是否需要进一步处理
    */
   public async processCommandResults(options: TerminalAgentOptions = {}): Promise<boolean> {
     try {
-      // Get agent response (without showing loading animation)
+      // 显示加载动画（命令结果处理时也显示）
+      const spinner = this.terminalUI.showThinkingAnimation();
+      console.log(chalk.gray("正在分析执行结果..."));
+      
+      // 获取agent响应（命令执行结果后的回复）
       const response = await this.agentService.streamResponse(
-        [...this.sessionService.getMessages()], // Convert to mutable array
+        [...this.sessionService.getMessages()], // 转换为可变数组
         {
           resourceId: this.sessionService.getResourceId(),
           threadId: this.sessionService.getThreadId()
         }
       );
 
-      // Collect complete response
+      spinner.stop();
+
+      // 收集完整响应
       let responseText = '';
       for await (const chunk of response.textStream) {
         responseText += chunk;
       }
 
-      // Process response content for display
+      // 处理响应内容以便显示
       const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
 
-      // Display processed content
+      // 显示处理后的内容
       this.terminalUI.displayAIResponse(processedResponse.displayText);
 
-      // Add assistant message (using original complete response) to history
+      // 添加助手消息到历史记录（使用原始完整响应）
       this.sessionService.addAssistantMessage(responseText);
 
-      // Process <shell> tags just to log them if found (doesn't execute)
-      await this.responseProcessor.processShellCommands(
-        responseText
-      );
+      // 检查新响应中是否又包含了<shell>标签
+      const hasShellTags = processedResponse.shellCommands.length > 0;
+      
+      // 如果存在<shell>标签，则执行命令并将结果发送回agent
+      if (hasShellTags) {
+        // 执行所有<shell>标签命令
+        const shellResults = await this.responseProcessor.executeShellCommands(responseText);
+        
+        if (shellResults.commands.length > 0 && shellResults.promptForAgent) {          
+          // 将执行结果作为用户消息添加到历史记录中
+          this.sessionService.addUserMessage(shellResults.promptForAgent);
+          
+          // 需要继续获取agent对执行结果的响应
+          return true;
+        }
+      }
 
-      // Always return false as we no longer loop based on <shell> tag processing.
+      // 如果没有<shell>标签，或者标签处理完成但无需进一步响应，则返回false
       return false;
     } catch (error) {
-      this.terminalUI.showError('Error processing command results:', error as Error);
+      this.terminalUI.showError('处理命令结果时发生错误:', error as Error);
       return false;
     }
   }
 
   /**
-   * Execute a single command (initial user input)
-   * @param command - Command to execute
-   * @param options - Terminal agent options
+   * 执行单条命令（用户初始输入）
+   * @param command - 要执行的命令
+   * @param options - 终端agent选项
    */
   public async executeOneCommand(command: string, options: TerminalAgentOptions = {}): Promise<void> {
-    // Add system message
+    // 添加系统消息
     this.sessionService.addSystemMessage();
 
-    // Add user message
+    // 添加用户消息
     this.sessionService.addUserMessage(command);
 
     try {
-      // Call processAgentResponse once. It now returns false regarding <shell> looping.
+      // 调用processAgentResponse，可能会返回true表示需要进一步处理<shell>标签
       let needsProcessing = await this.processAgentResponse(options);
 
-      // This loop might become redundant or only run if processAgentResponse/processCommandResults
-      // were changed to return true for other reasons (e.g., specific tool call patterns requiring follow-up).
-      // As per current logic focusing on removing <shell> loop, it won't loop based on <shell> tags.
+      // 如果需要进一步处理（有<shell>标签被执行），则循环获取agent响应
       while (needsProcessing) {
-        // processCommandResults also returns false regarding <shell> looping.
         needsProcessing = await this.processCommandResults(options);
       }
     } catch (error) {
-      this.terminalUI.showError('Command execution failed:', error as Error);
-      throw error; // Re-throw to be caught by the caller in index.ts or terminal-agent.ts
+      this.terminalUI.showError('命令执行失败:', error as Error);
+      throw error; // 重新抛出异常，由调用者在index.ts或terminal-agent.ts捕获
     }
   }
 }

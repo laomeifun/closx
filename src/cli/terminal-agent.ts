@@ -108,11 +108,17 @@ export class TerminalAgent {
         // Add user message
         this.sessionService.addUserMessage(userInput);
 
+        // Show thinking animation
+        const thinkingSpinner = this.terminalUI.showThinkingAnimation();
+        console.log(chalk.gray('AI 正在思考中...'));
+        
         // Process user input and get agent response
         let needsProcessing = await this.commandProcessor.processAgentResponse(options);
         
         // Loop processing command results until no longer needed
         while (needsProcessing) {
+          // Show thinking animation after each command execution
+          console.log(chalk.gray('AI 正在分析执行结果...'));
           needsProcessing = await this.commandProcessor.processCommandResults(options);
         }
       } catch (error) {
@@ -124,7 +130,7 @@ export class TerminalAgent {
         }
         
         // Handle other errors normally
-        console.error('\nProgram error:', error);
+        console.error('\n程序错误:', error);
       }
     }
   }
@@ -144,16 +150,17 @@ export class TerminalAgent {
         blacklistCheck: true // 添加一个标记，表示需要检查黑名单
       };
       
+      console.log(chalk.gray('AI 正在处理您的请求...'));
       await this.commandProcessor.executeOneCommand(command, enhancedOptions);
       
       // Automatically exit after executing one-time command
       // Use timeout to ensure all output is completed
       setTimeout(() => {
-        this.terminalUI.showExitMessage('Command execution completed, program will exit...');
+        this.terminalUI.showExitMessage('命令执行完成，程序将退出...');
         process.exit(0);
       }, 500);
     } catch (error) {
-      console.error('Command execution failed:', error);
+      console.error('命令执行失败:', error);
       process.exit(1);
     }
   }

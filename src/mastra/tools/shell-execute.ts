@@ -72,7 +72,7 @@ export const shellExecuteTool = createTool({
         const isOnWhitelist = whitelist.some(wlCmd => command.startsWith(wlCmd) || command === wlCmd);
         const isOnBlacklist = blacklist.some(blCmd => command.includes(blCmd));
 
-        console.log(`[DEBUG] ShellExecute: Mode=${mode}, Whitelisted=${isOnWhitelist}, Blacklisted=${isOnBlacklist}`);
+
 
         if (mode === CommandExecutionMode.MESSAGE) {
             console.log(`[INFO] ShellExecute: Command blocked by MESSAGE mode: ${ConsoleUtils.formatCommand(command)}`);
@@ -110,7 +110,7 @@ export const shellExecuteTool = createTool({
                confirmationReason = isOnWhitelist ? 'whitelist' : 'other';
             }
         } else {
-            console.warn(`[DEBUG] ShellExecute: Unknown mode '${mode}', defaulting to WHITELIST behavior.`);
+       
             if (isOnWhitelist) {
                needsConfirmation = false;
                confirmationReason = 'whitelist';
