@@ -26,7 +26,7 @@ export const createShellAgent = async () => {
     name: "Shell",
     instructions: shellPrompt,
     model: modelInstance, // Here we pass a configured model instance
-    tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, interactiveShellExecuteTool },
+    tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool },
     memory: shellMemory,
   });
 };
@@ -46,7 +46,7 @@ createShellAgent().then(agent => {
     name: "Shell",
     instructions: shellPrompt,
     model: config.openaiApi("gpt-4o"),
-    tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, interactiveShellExecuteTool },
+    tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool },
     memory: shellMemory,
   });
 });
