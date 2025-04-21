@@ -46,11 +46,12 @@ export class ShellTagProcessor {
       }
     }
 
-    // 保留简化版的命令显示
+    // 保留此块以通知用户找到了标签
     if (commands.length > 0) {
-      console.log(chalk.cyan('\n执行命令：'));
+      ConsoleUtils.showInfo('\n' + chalk.blue('📌 在响应中找到<shell>标签命令：'));
+      // 显示提取的命令（仅供参考）
       for (let i = 0; i < commands.length; i++) {
-        console.log(chalk.yellow(`> ${commands[i]}`));
+        console.log(`  ${chalk.cyan(`[${i + 1}/${commands.length}]`)} ${chalk.yellow(ConsoleUtils.formatCommand(commands[i]))}`);
       }
     }
 
@@ -64,25 +65,37 @@ export class ShellTagProcessor {
    */
   public async executeShellTagCommand(command: string): Promise<ShellCommandExecutionResult> {
     try {
-      // 使用继承模式执行命令，简化提示
-      console.log(chalk.cyan(`\n$ ${command}`));
+      // 使用inherit模式执行命令，这样用户可以看到实时输出并进行交互
+      console.log('\n' + chalk.cyan('╭─────────────────────────────────────────────'));
+      console.log(chalk.cyan('│') + chalk.yellow(' 执行命令: ') + chalk.green(command));
+      console.log(chalk.cyan('╰─────────────────────────────────────────────\n'));
       
+      // 显示命令开始执行的时间戳
       const startTime = new Date();
-      const result = await execInherit(command);
-      const endTime = new Date();
-      const executionTime = (endTime.getTime() - startTime.getTime()) / 1000;
+      console.log(chalk.gray(`[${startTime.toLocaleTimeString()}] 命令开始执行...\n`));
       
-      // 只显示简单的退出状态
-      if (result.exitCode !== 0) {
-        console.log(chalk.red(`\n命令退出码: ${result.exitCode} (${executionTime.toFixed(1)}s)`));
-      }
+      const result = await execInherit(command);
+      
+      // 显示命令结束执行的时间戳和耗时
+      const endTime = new Date();
+      const executionTime = (endTime.getTime() - startTime.getTime()) / 1000; // 转换为秒
+      
+      console.log('\n' + chalk.gray(`[${endTime.toLocaleTimeString()}] 命令执行${result.exitCode === 0 ? chalk.green('完成') : chalk.red('失败')} (耗时: ${executionTime.toFixed(2)}秒)`));
+      console.log(chalk.cyan('╭─────────────────────────────────────────────'));
+      console.log(chalk.cyan('│') + chalk.yellow(' 退出码: ') + (result.exitCode === 0 ? chalk.green(result.exitCode) : chalk.red(result.exitCode)));
+      console.log(chalk.cyan('╰─────────────────────────────────────────────\n'));
       
       // 创建要传递给agent的提示词
       const prompt = `
 ## 命令执行结果
+以下是您请求执行的命令的结果:
+
 命令: \`${command}\`
 退出码: ${result.exitCode}
-${result.exitCode === 0 ? '命令执行成功。' : `命令执行失败，返回退出码 ${result.exitCode}。`}
+执行时间: ${executionTime.toFixed(2)}秒
+
+请注意，命令已经以交互模式执行完成，输出已经显示给用户。
+${result.exitCode === 0 ? '命令执行成功。' : `命令执行失败，返回退出码 ${result.exitCode}。请分析可能的原因并提供解决方案。`}
       `.trim();
       
       return {
@@ -92,13 +105,17 @@ ${result.exitCode === 0 ? '命令执行成功。' : `命令执行失败，返回
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.log(chalk.red(`\n命令执行错误: ${errorMessage}`));
+      ConsoleUtils.showError(`命令执行失败: ${errorMessage}`);
       
-      // 简化错误提示词
+      // 创建错误提示词
       const prompt = `
 ## 命令执行错误
+尝试执行以下命令时发生错误:
+
 命令: \`${command}\`
 错误: ${errorMessage}
+
+请检查命令语法或尝试不同的方法。分析错误原因并提供解决方案。
       `.trim();
       
       return {

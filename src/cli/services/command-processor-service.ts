@@ -86,10 +86,13 @@ export class CommandProcessorService {
       
       // 如果存在<shell>标签，则执行命令并将结果发送回agent
       if (hasShellTags) {
+        ConsoleUtils.showInfo("发现<shell>标签命令，将使用inherit模式执行...");
         // 执行所有<shell>标签命令
         const shellResults = await this.responseProcessor.executeShellCommands(responseText);
         
         if (shellResults.commands.length > 0 && shellResults.promptForAgent) {
+          ConsoleUtils.showInfo(chalk.cyan("🔄 命令执行完成，正在将结果发送给AI进行分析..."));
+          
           // 将执行结果作为用户消息添加到历史记录中
           this.sessionService.addUserMessage(shellResults.promptForAgent);
           
@@ -116,7 +119,7 @@ export class CommandProcessorService {
     try {
       // 显示加载动画（命令结果处理时也显示）
       const spinner = this.terminalUI.showThinkingAnimation();
-      console.log(chalk.gray("正在分析执行结果..."));
+      console.log(chalk.cyan("🤔 AI正在分析命令执行结果..."));
       
       // 获取agent响应（命令执行结果后的回复）
       const response = await this.agentService.streamResponse(
@@ -149,10 +152,13 @@ export class CommandProcessorService {
       
       // 如果存在<shell>标签，则执行命令并将结果发送回agent
       if (hasShellTags) {
+        ConsoleUtils.showInfo("发现新的<shell>标签命令，将使用inherit模式执行...");
         // 执行所有<shell>标签命令
         const shellResults = await this.responseProcessor.executeShellCommands(responseText);
         
-        if (shellResults.commands.length > 0 && shellResults.promptForAgent) {          
+        if (shellResults.commands.length > 0 && shellResults.promptForAgent) {
+          ConsoleUtils.showInfo(chalk.cyan("🔄 命令执行完成，正在将结果发送给AI进行分析..."));
+          
           // 将执行结果作为用户消息添加到历史记录中
           this.sessionService.addUserMessage(shellResults.promptForAgent);
           

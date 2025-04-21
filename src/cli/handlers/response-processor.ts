@@ -6,7 +6,6 @@ import { ShellTagProcessor, ShellCommandExecutionResult } from './shell-tag-proc
 import { SessionService } from '../services/session-service';
 import { TerminalAgentOptions } from '../types/terminal-types';
 import { ConsoleUtils } from '../utils/console-utils';
-import chalk from 'chalk';
 
 /**
  * Processed response content
@@ -133,19 +132,15 @@ export class ResponseProcessor {
 
     // 执行每个命令并收集结果
     const results: ShellCommandExecutionResult[] = [];
-    let combinedPrompt = '# 命令执行结果\n\n';
+    let combinedPrompt = '# <shell>标签命令执行结果\n\n';
     
     for (let i = 0; i < commands.length; i++) {
-      if (commands.length > 1) {
-        console.log(chalk.gray(`执行命令 ${i + 1}/${commands.length}`));
-      }
+      ConsoleUtils.showInfo(`\n执行命令 ${i + 1}/${commands.length}`);
       const commandResult = await this.shellTagProcessor.executeShellTagCommand(commands[i]);
       results.push(commandResult);
       
       // 将这个命令的提示词添加到组合提示词中
-      if (commands.length > 1) {
-        combinedPrompt += `## 命令 ${i + 1}/${commands.length}\n`;
-      }
+      combinedPrompt += `## 命令 ${i + 1}/${commands.length}\n`;
       combinedPrompt += `${commandResult.prompt}\n\n`;
     }
 
