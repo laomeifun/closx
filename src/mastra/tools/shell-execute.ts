@@ -142,14 +142,19 @@ export const shellExecuteTool = createTool({
           ConsoleUtils.showWarning(`Confirm execution: `);
           console.log(`Command: ${ConsoleUtils.formatCommand(command)}`);
           
-          const { confirm } = await inquirer.prompt({
-            type: 'confirm',
-            name: 'confirm',
+          // 修改为使用list类型代替confirm类型，显示Yes/No选择菜单
+          const { action } = await inquirer.prompt({
+            type: 'list',
+            name: 'action',
             message: 'Execute this command?',
-            default: confirmDefault,
+            choices: [
+              { name: 'Yes', value: true },
+              { name: 'No', value: false }
+            ],
+            default: confirmDefault ? 0 : 1, // 默认选项索引，0为Yes，1为No
           });
           
-          confirmedToExecute = confirm;
+          confirmedToExecute = action;
         } catch (error: any) {
           return resolve({
             stdout: '',
@@ -373,16 +378,19 @@ export async function executeShellCommand(
     ConsoleUtils.showWarning(`Confirm execution: (Reason: ${confirmationReason})`);
     console.log(`Command: ${ConsoleUtils.formatCommand(executionCommand)}`);
     
-    const { confirm } = await inquirer.prompt([
-      {
-        type: "confirm",
-        name: "confirm",
-        message: "Execute this command?",
-        default: false,
-      }
-    ]);
+    // 修改为使用list类型代替confirm类型，显示Yes/No选择菜单
+    const { action } = await inquirer.prompt({
+      type: 'list',
+      name: 'action',
+      message: 'Execute this command?',
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false }
+      ],
+      default: 1, // 默认选择No（索引1）
+    });
     
-    if (!confirm) {
+    if (!action) {
       console.log(chalk.red('Command execution cancelled'));
       
       return {

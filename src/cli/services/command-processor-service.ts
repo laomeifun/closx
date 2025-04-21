@@ -59,10 +59,11 @@ export class CommandProcessorService {
   public async processAgentResponse(options: TerminalAgentOptions = {}): Promise<boolean> {
     // 显示加载动画
     const spinner = this.terminalUI.showThinkingAnimation();
+    console.log(chalk.cyan("🤔 AI正在生成响应..."));
 
     try {
-      // 获取agent响应
-      const responseText = await this.agentService.generateResponse(
+      // 使用流式API获取agent响应
+      const response = await this.agentService.streamResponse(
         [...this.sessionService.getMessages()], // 转换为可变数组
         {
           resourceId: this.sessionService.getResourceId(),
@@ -72,11 +73,29 @@ export class CommandProcessorService {
 
       spinner.stop();
 
-      // 处理响应内容以便显示
-      const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
+      // 收集完整响应并实时显示
+      let responseText = '';
+      let isFirstChunk = true;
+      
+      // 在显示第一个内容块前先显示响应头
+      ConsoleUtils.showResponseHeader();
+      
+      for await (const chunk of response.textStream) {
+        // 如果是第一个内容块，不需要额外处理
+        if (isFirstChunk) {
+          isFirstChunk = false;
+        }
+        
+        // 输出AI回复文本片段，无需换行以实现连续输出效果
+        process.stdout.write(chunk);
+        responseText += chunk;
+      }
+      
+      // 在流式响应完成后添加换行
+      console.log('\n');
 
-      // 显示处理后的内容
-      this.terminalUI.displayAIResponse(processedResponse.displayText);
+      // 处理响应内容以便进一步处理（如提取命令）
+      const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
 
       // 添加助手消息到历史记录（使用原始完整响应）
       this.sessionService.addAssistantMessage(responseText);
@@ -132,17 +151,29 @@ export class CommandProcessorService {
 
       spinner.stop();
 
-      // 收集完整响应
+      // 收集完整响应并实时显示
       let responseText = '';
+      let isFirstChunk = true;
+      
+      // 在显示第一个内容块前先显示响应头
+      ConsoleUtils.showResponseHeader();
+      
       for await (const chunk of response.textStream) {
+        // 如果是第一个内容块，不需要额外处理
+        if (isFirstChunk) {
+          isFirstChunk = false;
+        }
+        
+        // 输出AI回复文本片段，无需换行以实现连续输出效果
+        process.stdout.write(chunk);
         responseText += chunk;
       }
+      
+      // 在流式响应完成后添加换行
+      console.log('\n');
 
-      // 处理响应内容以便显示
+      // 处理响应内容以便显示（提取命令等）
       const processedResponse = this.responseProcessor.processResponseForDisplay(responseText);
-
-      // 显示处理后的内容
-      this.terminalUI.displayAIResponse(processedResponse.displayText);
 
       // 添加助手消息到历史记录（使用原始完整响应）
       this.sessionService.addAssistantMessage(responseText);
