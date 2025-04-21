@@ -5,7 +5,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 
-import { TerminalAgentOptions } from './types/terminal-types';
+import { TerminalAgentOptions, ExitPromptError } from './types/terminal-types';
 import { SessionService } from './services/session-service';
 import { CommandProcessorService } from './services/command-processor-service';
 import { TerminalUI } from './ui/terminal-ui';
@@ -49,7 +49,7 @@ export class TerminalAgent {
       .option('-v, --verbose', 'Show detailed output')
       .option('-i, --interactive', 'Enter interactive mode')
       .argument('[command]', 'Execute command directly')
-      .action(async (command, options) => {
+      .action(async (command, options): Promise<void> => {
         if (command) {
           // Check if command is a special command
           if (command.startsWith('/')) {
@@ -120,14 +120,14 @@ export class TerminalAgent {
         }
       } catch (error) {
         // If ExitPromptError, user pressed Ctrl+C, exit directly
-        if (error && (error as any).name === 'ExitPromptError') {
+        if (error instanceof ExitPromptError) {
           this.terminalUI.showExitMessage();
           process.exit(0);
           return; // Prevent subsequent code execution
         }
 
         // Handle other errors normally
-        console.error('\n程序错误:', error);
+        console.error('\nProgram error:', error);
       }
     }
   }
@@ -139,25 +139,28 @@ export class TerminalAgent {
    */
   private async executeOneCommand(command: string, options: TerminalAgentOptions = {}): Promise<void> {
     try {
-      // 确保在非交互模式下也应用黑名单检查逻辑
-      // 添加交互式参数，即使在非交互模式下也要求确认黑名单命令
+      // Ensure blacklist check logic is applied in non-interactive mode
+      // Add interactive parameters to require confirmation for blacklisted commands
       const enhancedOptions = {
         ...options,
-        interactive: true, // 启用交互式确认
-        blacklistCheck: true // 添加一个标记，表示需要检查黑名单
+        interactive: true, // Enable interactive confirmation
+        blacklistCheck: true // Add a flag indicating need to check blacklist
       };
 
-      console.log(chalk.gray('AI 正在处理您的请求...'));
+      console.log(chalk.gray('AI is processing your request...'));
       await this.commandProcessor.executeOneCommand(command, enhancedOptions);
 
       // Automatically exit after executing one-time command
+      // Define a constant for exit timeout
+      const EXIT_TIMEOUT_MS = 500;
+      
       // Use timeout to ensure all output is completed
       setTimeout(() => {
-        this.terminalUI.showExitMessage('命令执行完成，程序将退出...');
+        this.terminalUI.showExitMessage('Command execution complete, program will exit...');
         process.exit(0);
-      }, 500);
+      }, EXIT_TIMEOUT_MS);
     } catch (error) {
-      console.error('命令执行失败:', error);
+      console.error('Command execution failed:', error);
       process.exit(1);
     }
   }

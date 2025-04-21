@@ -49,10 +49,10 @@ export class ConsoleUtils {
   }
   
   /**
-   * Display AI response header
+   * Display AI response header without line break
    */
   public static showResponseHeader(): void {
-    console.log(chalk.blue('🤖 AI > '));
+    process.stdout.write(chalk.blue('🤖 AI > '));
   }
   
   /**
@@ -100,4 +100,4 @@ export class ConsoleUtils {
     console.log(chalk.yellow('🌐 /env') + ' - Show current environment information');
     console.log('\n');
   }
-} 
+}

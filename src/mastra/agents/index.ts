@@ -50,26 +50,3 @@ createShellAgent().then(agent => {
     memory: shellMemory,
   });
 });
-
-// import { createOpenAI } from '@ai-sdk/openai';
-// import { env } from 'process';
-
-// export const myApi = createOpenAI({
-//   baseURL: env.OPENAI_API_BASE_URL,
-//   apiKey: env.OPENAI_API_KEY
-// });
-// export const shell = new Agent({
-//   name: "Shell",
-//   instructions: shellPrompt,
-//   model:myApi("grok-3-beta"),
-//   tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, getCurrentDirectoryTool },
-//   memory: shellMemory,
-// });
-
-// export const createShellAgent = new Agent({
-//   name: "Shell",
-//   instructions: shellPrompt,
-//   model:myApi("grok-3-beta"),
-//   tools: { shellExecuteTool, directoryInfoTool, getCurrentEnvironmentTool, getCurrentDirectoryTool },
-//   memory: shellMemory,
-// });

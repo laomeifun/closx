@@ -175,7 +175,7 @@ export const shellExecuteTool = createTool({
         });
       }
 
-      console.log(chalk.green('Starting command execution'));
+      console.log(chalk.green('-----------------'));
 
       const options: SpawnOptions = {
         shell: true,
@@ -401,31 +401,48 @@ export async function executeShellCommand(
     }
   }
 
-  try {
-    console.log(chalk.green('Starting command execution'));
-    
-    const { stdout, stderr } = await execAsync(executionCommand, {
-      cwd: options.cwd,
-      ...(options.execOptions || {}),
-    });
+  /**
+   * Executes the command with proper error handling
+   * @param commandParams Parameters for execution
+   * @returns Result of command execution with stdout and stderr
+   */
+  const executeWithErrorHandling = async (commandParams: {
+    command: string;
+    cwd?: string;
+    execOptions?: ExecOptions;
+  }): Promise<ExecutionResult> => {
+    try {
+      console.log(chalk.green('-------------------'));
+      const { command, cwd, execOptions } = commandParams;
+      const { stdout, stderr } = await execAsync(command, {
+        cwd,
+        ...(execOptions || {}),
+      });
+      console.log(chalk.green('Command executed successfully'));
+      return {
+        success: true,
+        stdout,
+        stderr,
+      };
+    } catch (error: unknown) {
+      console.log(chalk.red('Command execution failed'));
+      const typedError = error as ExecException & { 
+        stdout?: string; 
+        stderr?: string;
+        message: string;
+      };
+      console.error(`Error: ${typedError.message}`);
+      return {
+        success: false,
+        stdout: typedError.stdout || "",
+        stderr: typedError.stderr || typedError.message,
+      };
+    }
+  };
 
-    console.log(chalk.green('Command executed successfully'));
-    
-    return {
-      success: true,
-      stdout,
-      stderr,
-    };
-  } catch (error) {
-    console.log(chalk.red('Command execution failed'));
-    
-    const err = error as ExecException & { stdout?: string; stderr?: string };
-    console.error(`Error: ${err.message}`);
-    
-    return {
-      success: false,
-      stdout: err.stdout || "",
-      stderr: err.stderr || err.message,
-    };
-  }
+  return executeWithErrorHandling({
+    command: executionCommand,
+    cwd: options.cwd,
+    execOptions: options.execOptions,
+  });
 }
